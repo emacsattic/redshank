@@ -47,12 +47,21 @@
 (defcustom redshank-prefix-key "C-x C-r"
   "*Prefix key sequence for redshank-mode commands.
 \\<redshank-mode-map>"
-  :type 'string
+  :type  'string
   :group 'redshank)
 
 (defcustom redshank-reformat-defclass-skeletons t
   "*Reformat DEFCLASS entries created with REDSHANK skeletons."
-  :type 'boolean
+  :type  'boolean
+  :group 'redshank)
+
+(defcustom redshank-accessor-name-function
+  'redshank-accessor-name/get
+  "*Function which, given a slot-name, returns the accessor name."
+  :type  '(radio
+           (function-item redshank-accessor-name/get)
+           (function-item redshank-accessor-name/of)
+           (function :tag "Other"))
   :group 'redshank)
 
 ;;;; Minor Mode Definition
@@ -78,6 +87,22 @@
   :keymap `(,(read-kbd-macro redshank-prefix-key) . redshank-mode-map))
 
 ;;;; Utility Functions
+
+(defun redshank-accessor-name/get (slot-name)
+  "GET-SLOT style accessor names."
+  (concat "get-" slot-name))
+
+(defun redshank-accessor-name/of (slot-name)
+  "SLOT-OF style accessor names."
+  (concat slot-name "-of"))
+
+(defun redshank-accessor-name (slot-name)
+  (cond ((or (null redshank-accessor-name-function)
+             (functionp redshank-accessor-name-function))
+         (funcall redshank-accessor-name-function slot-name))
+        ((stringp redshank-accessor-name-function)
+         (concat redshank-accessor-name-function slot-name))
+        (t (redshank-accessor-name/get slot-name))))
 
 (defun redshank-define-keys ()
   (dolist (spec redshank-keys)
@@ -313,7 +338,7 @@ is formatted to:
         (redshank-align-forms-as-columns (progn (down-list) (point))
                                      slots.end)))))
 
-;;;; Skeletons
+;;;; Skeletons 
 
 (define-skeleton redshank-defpackage-skeleton
   "Inserts a Common Lisp DEFPACKAGE skeleton."
@@ -329,31 +354,49 @@ is formatted to:
                                     'mime-charset))))
   & " -*-"
   & \n
-  & \n "(defpackage #:" str
-  \n "(:nicknames" ("Nickname: " " #:" str) & ")" | '(kill-whole-line -1)
-  \n "(:use #:CL" ((slime-read-package-name "USEd package: ") " #:" str) ")"
-  ")" \n
-  \n
-  (if v1 "(in-package #:") & str & ")" & \n &
+  & \n '(paredit-open-parenthesis) "defpackage #:" str
+  \n '(paredit-open-parenthesis)
+     ":nicknames" ("Nickname: " " #:" str)
+   & '(paredit-close-parenthesis) & \n
+   | '(progn
+        (backward-up-list)
+        (kill-sexp))
+  '(paredit-open-parenthesis)
+   ":use #:CL" ((slime-read-package-name "USEd package: ") " #:" str)
+  '(paredit-close-parenthesis) 
+  '(paredit-close-parenthesis)
+  \n (if v1 "(in-package #:") & str & ")" & \n &
   \n
   _)
 
 (define-skeleton redshank-defclass-skeleton
   "Inserts a Common Lisp DEFCLASS skeleton."
   "Class: "
-  "(defclass " str " (" ((skeleton-read "Superclass: ") str " ") & -1 ")"
-  \n "(" ((skeleton-read "Slot: ")
-          "(" str " :accessor get-" str " :initarg :" str ")" \n) & '(join-line)
-  ")"
+  '(paredit-open-parenthesis)
+  "defclass " str " "
+  '(paredit-open-parenthesis)
+   ((skeleton-read "Superclass: ") str " ") & -1
+  '(paredit-close-parenthesis)
+  \n '(paredit-open-parenthesis)
+      ((skeleton-read "Slot: ")
+       '(paredit-open-parenthesis)
+        str " :accessor " (redshank-accessor-name str)
+        " :initarg :" str
+       '(paredit-close-parenthesis) \n) & '(join-line)
+  '(paredit-close-parenthesis)
   ;; \n "(:default-initargs " - ")" ;; add to your liking...
-  ")\n" \n
+  '(paredit-close-parenthesis) "\n" \n
   _)
 
 (define-skeleton redshank-defclass-slot-skeleton
   "Inserts a Common Lisp DEFCLASS slot skeleton."
   "Slot: "
   ((skeleton-read "Slot: ")
-   "(" str " :accessor get-" str " :initarg :" str ")" \n) & '(join-line)
+   '(indent-according-to-mode)
+   '(paredit-open-parenthesis)
+    str " :accessor " (redshank-accessor-name str)
+    " :initarg :" str
+   '(paredit-close-parenthesis) \n) & '(join-line)
   _)
 
 (defadvice redshank-defclass-skeleton
