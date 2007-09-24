@@ -72,6 +72,7 @@
     ("c" . redshank-condify-form)
     ("l" . redshank-letify-form-up)
     ("n" . redshank-rewrite-negated-predicate)
+    ("p" . redshank-maybe-splice-progn)
     ("C" . redshank-defclass-skeleton)
     ("P" . redshank-defpackage-skeleton)
     ("S" . redshank-defclass-slot-skeleton))
