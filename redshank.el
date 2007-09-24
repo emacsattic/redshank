@@ -15,8 +15,8 @@
 
 ;; To do:
 ;; 
-;; * Unit tests; no really, there are just too many ways to mess
-;;   code and comments up.
+;; * Unit tests; no really, there are just too many ways to mess up
+;;   code and comments.
 
 ;; Issues:
 ;;
@@ -169,7 +169,8 @@ LABELS or FLET.)"
   (reduce #'max args :key (lambda (arg) (or arg 0))))
 
 (defun redshank-align-sexp-columns (column-widths)
-  "Align forms in S-expression according to COLUMN-WIDTH."
+  "Align expressions in S-expression at point.
+COLUMN-WIDTHS is expected to be a list."
   (down-list)
   (loop initially (while (forward-comment +1))
         for width in column-widths
