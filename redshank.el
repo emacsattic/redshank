@@ -82,8 +82,7 @@
   "Keymap for the Redshank minor mode.")
 
 (define-minor-mode redshank-mode
-  "Minor mode for editing Common Lisp code.
-"
+  "Minor mode for editing Common Lisp code."
   :lighter " Redshank"
   :keymap `(,(read-kbd-macro redshank-prefix-key) . redshank-mode-map))
 
