@@ -97,12 +97,10 @@
   (concat slot-name "-of"))
 
 (defun redshank-accessor-name (slot-name)
-  (cond ((or (null redshank-accessor-name-function)
-             (functionp redshank-accessor-name-function))
-         (funcall redshank-accessor-name-function slot-name))
-        ((stringp redshank-accessor-name-function)
-         (concat redshank-accessor-name-function slot-name))
-        (t (redshank-accessor-name/get slot-name))))
+  (if (or (null redshank-accessor-name-function)
+          (functionp redshank-accessor-name-function))
+      (funcall redshank-accessor-name-function slot-name)
+    (redshank-accessor-name/get slot-name)))
 
 (defun redshank-define-keys ()
   (dolist (spec redshank-keys)
