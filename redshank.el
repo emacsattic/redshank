@@ -12,18 +12,41 @@
 ;;   Called also redleg and _clee_.
 
 ;;; Commentary:
+;;; Setup
 
-;; To do:
-;; 
+;; Add this to your Emacs configuration:
+;;
+;;   (add-to-list 'load-path "/path/to/elisp/")
+;;   (autoload 'redshank-mode "redshank"
+;;     "Minor mode for editing and refactoring (Common) Lisp code."
+;;     t)
+;;   (add-hook '...-mode-hook (lambda () (redshank-mode +1)))
+;;
+;; Also, this mode can be enabled with M-x redshank-mode.
+;; Customization of redshank can be accomplished with
+;; `eval-after-load':
+;;
+;;   (eval-after-load 'redshank
+;;     '(progn ...redefine keys, etc....))
+;;
+;; This code should run at least in GNU Emacs 22 and later.
+
+;;; To Do
+
 ;; * Unit tests; no really, there are just too many ways to mess up
 ;;   code and comments.
 
-;; Issues:
-;;
+;;; Known Issues
+
 ;; `redshank-align-defclass-slots':
 ;; * Does not work if slot forms contain newlines
 ;; * Does not work well with #+ and #- reader conditionals
 ;; * Long slot options cause large columns (:documentation ...)
+
+;;; Contact
+
+;; Send questions, bug reports, comments and feature suggestions 
+;; to: Michael Weber <michaelw+redshank@foldr.org>
 
 ;;; Code:
 (defconst redshank-version 0)
@@ -82,7 +105,7 @@
   "Keymap for the Redshank minor mode.")
 
 (define-minor-mode redshank-mode
-  "Minor mode for editing Common Lisp code."
+  "Minor mode for editing and refactoring (Common) Lisp code."
   :lighter " Redshank"
   :keymap `(,(read-kbd-macro redshank-prefix-key) . redshank-mode-map))
 
