@@ -393,7 +393,7 @@ is formatted to:
    ":use #:CL" ((slime-read-package-name "USEd package: ") " #:" str)
   '(paredit-close-parenthesis) 
   '(paredit-close-parenthesis)
-  \n (if v1 "(in-package #:") & str & ")" & \n &
+  \n \n (if v1 "(in-package #:") & str & ")" & \n &
   \n
   _)
 
