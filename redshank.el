@@ -136,10 +136,14 @@
       (define-key redshank-mode-map key (cdr spec)))))
 
 (defun redshank--looking-at-or-inside (spec)
-  (let ((form-regex (concat "(" spec "\\S_")))
+  (let ((form-regex (concat "(" spec "\\S_"))
+        (here.point (point)))
     (unless (looking-at "(")
       (ignore-errors (backward-up-list)))
-    (looking-at form-regex)))
+    (if (looking-at form-regex)
+        t
+      (prog1 nil
+        (goto-char here.point)))))
 
 (defun redshank-maybe-splice-progn ()
   "Splice PROGN form at point into its surrounding form.
@@ -228,9 +232,9 @@ COLUMN-WIDTHS is expected to be a list."
   "Transform a Common Lisp IF form into an equivalent COND form."
   (interactive "*")
   (flet ((redshank--frob-cond-branch ()
-                                 (paredit-wrap-sexp +2)
-                                 (forward-sexp)                              
-                                 (redshank-maybe-splice-progn)))
+            (paredit-wrap-sexp +2)
+            (forward-sexp)                              
+            (redshank-maybe-splice-progn)))
     (save-excursion
       (unless (redshank--looking-at-or-inside "if")
         (error "Cowardly refusing to mutilate other forms than IF"))
