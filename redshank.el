@@ -369,9 +369,11 @@ is formatted to:
 (define-skeleton redshank-defpackage-skeleton
   "Inserts a Common Lisp DEFPACKAGE skeleton."
   (skeleton-read "Package: " (if v1
-                                 (file-name-sans-extension
-                                  (file-name-nondirectory
-                                   (buffer-file-name)))))
+                                 (or (ignore-errors
+                                       (file-name-sans-extension
+                                        (file-name-nondirectory
+                                         (buffer-file-name))))
+                                     "TEMP")))
   (if (setq v1 (bobp)) ";;; -*- Mode:Lisp; Syntax:ANSI-Common-Lisp;")
   & (if buffer-file-coding-system
         (concat " Coding:"
