@@ -11,7 +11,8 @@
 ;;   redshank (T. fuscus) is larger, and has orange-red legs.
 ;;   Called also redleg and _clee_.
 
-;;; Commentary:
+;;;; Commentary
+
 ;;; Setup
 
 ;; Add this to your Emacs configuration:
@@ -24,12 +25,14 @@
 ;;
 ;; Also, this mode can be enabled with M-x redshank-mode.
 ;; Customization of redshank can be accomplished with
+;; M-x customize-group RET redshank RET, or with
 ;; `eval-after-load':
 ;;
 ;;   (eval-after-load 'redshank
 ;;     '(progn ...redefine keys, etc....))
 ;;
-;; This code should run at least in GNU Emacs 22 and later.
+;; This code was tested with Paredit 20, and should run at least in
+;; GNU Emacs 22 and later.
 
 ;;; To Do
 
@@ -45,8 +48,9 @@
 
 ;;; Contact
 
-;; Send questions, bug reports, comments and feature suggestions 
-;; to: Michael Weber <michaelw+redshank@foldr.org>
+;; Send questions, bug reports, comments and feature suggestions to
+;; Michael Weber <michaelw+redshank@foldr.org>.  New versions can be
+;; found at <http://www.foldr.org/~michaelw/lisp/redshank/>.
 
 ;;; Code:
 (defconst redshank-version 0)
