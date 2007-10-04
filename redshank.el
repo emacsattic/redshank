@@ -94,6 +94,7 @@
   '(("A" . redshank-align-forms-as-columns)
     ("a" . redshank-align-defclass-slots)
     ("c" . redshank-condify-form)
+    ("e" . redshank-eval-whenify-form)
     ("l" . redshank-letify-form-up)
     ("n" . redshank-rewrite-negated-predicate)
     ("p" . redshank-maybe-splice-progn)
@@ -288,6 +289,22 @@ With prefix argument, or if no suitable binding can be found,
                (backward-sexp)          ; ... and reindent it
                (indent-sexp))))
           (t (redshank-letify-form var)))))
+
+(defun redshank-eval-whenify-form (&optional n)
+  "Wraps top-level form at point with (EVAL-WHEN (...) ...).
+With optional numeric argument, wrap N top-level forms."
+  ;; A slightly modified version of `asf-eval-whenify' from
+  ;; <http://boinkor.net/archives/2006/11/three_useful_emacs_hacks_for_l.html>
+  (interactive "*p")
+  (save-excursion
+    (if (and (boundp 'slime-repl-input-start-mark)
+             slime-repl-input-start-mark)
+        (slime-repl-beginning-of-defun)
+      (beginning-of-defun))
+    (paredit-wrap-sexp n)
+    (insert "eval-when (:compile-toplevel :load-toplevel :execute)\n")
+    (backward-up-list)
+    (indent-sexp)))
 
 (defun redshank-rewrite-negated-predicate ()
   "Rewrite the negated predicate of a WHEN or UNLESS form at point."
