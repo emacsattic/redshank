@@ -1,4 +1,4 @@
-;;; -*- Mode: Emacs-Lisp; outline-regexp: "\n;;;;+" -*-
+;;; -*- Mode: Emacs-Lisp; outline-regexp: ";;;+ [^\n]\\|(" -*-
 ;;;;;; redshank.el --- Common Lisp Editing Extensions
 
 ;; Copyright (C) 2006, 2007  Michael Weber
@@ -12,7 +12,6 @@
 ;;   Called also redleg and _clee_.
 
 ;;;; Commentary
-
 ;;; Setup
 
 ;; Add this to your Emacs configuration:
@@ -60,7 +59,6 @@
 (require 'skeleton)
 
 ;;;; Customizations
-
 (defgroup redshank nil
   "Common Lisp Editing Extensions"
   :load 'redshank
@@ -92,7 +90,6 @@
   :group 'redshank)
 
 ;;;; Minor Mode Definition
-
 (defconst redshank-keys
   '(("A" . redshank-align-forms-as-columns)
     ("a" . redshank-align-defclass-slots)
@@ -114,7 +111,6 @@
   :keymap `(,(read-kbd-macro redshank-prefix-key) . redshank-mode-map))
 
 ;;;; Utility Functions
-
 (defun redshank-accessor-name/get (slot-name)
   "GET-SLOT style accessor names."
   (concat "get-" slot-name))
@@ -227,7 +223,6 @@ COLUMN-WIDTHS is expected to be a list."
   (delete-overlay redshank-letify-overlay))
 
 ;;;; Form Frobbing
-
 (defun redshank-condify-form ()
   "Transform a Common Lisp IF form into an equivalent COND form."
   (interactive "*")
@@ -368,8 +363,7 @@ is formatted to:
         (redshank-align-forms-as-columns (progn (down-list) (point))
                                      slots.end)))))
 
-;;;; Skeletons 
-
+;;;; Skeletons
 (define-skeleton redshank-defpackage-skeleton
   "Inserts a Common Lisp DEFPACKAGE skeleton."
   (skeleton-read "Package: " (if v1
@@ -448,11 +442,9 @@ is formatted to:
      (redshank-align-defclass-slots))))
 
 ;;;; Initialization
-
 (redshank-define-keys)
 (add-hook 'pre-command-hook 'redshank-unhighlight-binder)
 (provide 'redshank)
-
 
 ;;;; Licence
 
