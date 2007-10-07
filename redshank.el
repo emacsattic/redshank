@@ -103,7 +103,12 @@
     ("S" . redshank-defclass-slot-skeleton))
   "Standard key bindings for the Redshank minor mode.")
 
-(defvar redshank-mode-map (make-sparse-keymap)
+(defvar redshank-mode-map
+  (let ((map (make-sparse-keymap)))
+    (dolist (spec redshank-keys map)
+      (let* ((key-spec (concat redshank-prefix-key " " (car spec)))
+             (key (read-kbd-macro key-spec)))
+        (define-key map key (cdr spec)))))
   "Keymap for the Redshank minor mode.")
 
 (define-minor-mode redshank-mode
@@ -125,12 +130,6 @@
           (functionp redshank-accessor-name-function))
       (funcall redshank-accessor-name-function slot-name)
     (redshank-accessor-name/get slot-name)))
-
-(defun redshank-define-keys ()
-  (dolist (spec redshank-keys)
-    (let* ((key-spec (concat redshank-prefix-key " " (car spec)))
-           (key (read-kbd-macro key-spec)))
-      (define-key redshank-mode-map key (cdr spec)))))
 
 (defun redshank--looking-at-or-inside (spec)
   (let ((form-regex (concat "(" spec "\\S_"))
@@ -459,7 +458,6 @@ is formatted to:
      (redshank-align-defclass-slots))))
 
 ;;;; Initialization
-(redshank-define-keys)
 (add-hook 'pre-command-hook 'redshank-unhighlight-binder)
 (provide 'redshank)
 
