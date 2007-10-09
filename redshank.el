@@ -136,10 +136,9 @@
         (here.point (point)))
     (unless (looking-at "(")
       (ignore-errors (backward-up-list)))
-    (if (looking-at form-regex)
-        t
-      (prog1 nil
-        (goto-char here.point)))))
+    (or (looking-at form-regex)
+        (prog1 nil
+          (goto-char here.point)))))
 
 (defun redshank-maybe-splice-progn ()
   "Splice PROGN form at point into its surrounding form.
