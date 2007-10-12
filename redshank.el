@@ -20,7 +20,7 @@
 ;;   (autoload 'redshank-mode "redshank"
 ;;     "Minor mode for editing and refactoring (Common) Lisp code."
 ;;     t)
-;;   (add-hook '...-mode-hook (lambda () (redshank-mode +1)))
+;;   (add-hook '...-mode-hook 'turn-on-redshank-mode)
 ;;
 ;; Also, this mode can be enabled with M-x redshank-mode.
 ;; Customization of redshank can be accomplished with
@@ -120,7 +120,7 @@
   "Turn on Redshank mode.  Please see function `redshank-mode'.
 
 This function is designed to be added to hooks, for example:
-  (add-hook 'lisp-mode-hook 'turn-on-redshank-mode)"
+  \(add-hook 'lisp-mode-hook 'turn-on-redshank-mode)"
   (interactive)
   (redshank-mode +1))
 
