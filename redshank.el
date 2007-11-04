@@ -102,6 +102,7 @@
     ("a" . redshank-align-defclass-slots)
     ("c" . redshank-condify-form)
     ("e" . redshank-eval-whenify-form)
+    ("f" . redshank-complete-form)
     ("l" . redshank-letify-form-up)
     ("n" . redshank-rewrite-negated-predicate)
     ("p" . redshank-maybe-splice-progn)
@@ -221,6 +222,12 @@ COLUMN-WIDTHS is expected to be a list."
                (just-one-space (if (looking-at "[[:space:]]*)") 0
                                  (1+ (- width used))))))
         finally (up-list)))
+
+(defun redshank--defclass-slot-form-at-point-p ()
+  (ignore-errors
+    (save-excursion
+      (backward-up-list +3)
+      (looking-at "(defclass\\S_"))))
 
 ;;; Highlighting
 (defvar redshank-letify-overlay
@@ -393,6 +400,46 @@ is formatted to:
         (redshank-align-forms-as-columns (progn (down-list) (point))
                                      slots.end)))))
 
+(defun redshank-complete-form ()
+  "If a Common Lisp DEFCLASS slot form is at point, attempt to complete it.
+The surrounding DEFCLASS form is reformatted, if this is enabled by
+`redshank-reformat-defclass-forms'.
+
+If point is not in a slot form, fall back to `slime-complete-form'.
+
+\\<redshank-mode-map>\\[redshank-complete-form]
+
+\(defclass foo ()
+  (...
+   (slot-n |)
+   ...))
+  ->
+\(defclass foo ()
+  (...
+   (slot-n :accessor get-slot-n :initarg :slot-n)|
+   ...))"
+  (interactive "*")
+  (if (not (redshank--defclass-slot-form-at-point-p))
+      (call-interactively 'slime-complete-form)
+    (backward-up-list)
+    (down-list)
+    (let ((slot-name (thing-at-point 'symbol)))
+      (when slot-name
+        (forward-sexp)
+        (just-one-space)
+        (let ((start (point)))
+          (paredit-ignore-sexp-errors
+            (while (not (eobp))
+              (forward-sexp)))
+          (delete-region start (point)))
+        (insert ":accessor " (redshank-accessor-name slot-name)
+                " :initarg :" slot-name)
+        (up-list)
+        (when redshank-reformat-defclass-forms
+          (save-excursion
+            (backward-up-list +2)      ; to beginning of defclass form
+            (redshank-align-defclass-slots)))))))
+
 ;;;; Skeletons
 (define-skeleton redshank-mode-line-skeleton
   "Inserts mode line."
@@ -483,6 +530,10 @@ is formatted to:
      (redshank-align-defclass-slots))))
 
 ;;;; Initialization
+(eval-after-load "slime"
+  '(substitute-key-definition 'slime-complete-form 'redshank-complete-form
+                              redshank-mode-map slime-mode-map))
+
 (add-hook 'pre-command-hook 'redshank-unhighlight-binder)
 (provide 'redshank)
 
