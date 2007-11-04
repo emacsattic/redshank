@@ -30,6 +30,13 @@
 ;;   (eval-after-load "redshank"
 ;;     '(progn ...redefine keys, etc....))
 ;;
+;; Some of the skeleton functions (like `redshank-in-package-skeleton' or
+;; `redshank-mode-line-skeleton') are good candidates for autoinsert:
+;;
+;;   (push '(lisp-mode . redshank-in-package-skeleton)
+;;         auto-insert-alist)
+;;
+;;
 ;; This code was tested with Paredit 20, and should run at least in
 ;; GNU Emacs 22 and later.
 
@@ -75,8 +82,8 @@
   :type  'string
   :group 'redshank)
 
-(defcustom redshank-reformat-defclass-skeletons t
-  "*Reformat DEFCLASS entries created with REDSHANK skeletons."
+(defcustom redshank-reformat-defclass-forms t
+  "*Reformat DEFCLASS forms when modifying them with Redshank commands."
   :type  'boolean
   :group 'redshank)
 
@@ -387,23 +394,36 @@ is formatted to:
                                      slots.end)))))
 
 ;;;; Skeletons
+(define-skeleton redshank-mode-line-skeleton
+  "Inserts mode line."
+  nil
+  (concat ";;; -*- Mode:Lisp; Syntax:ANSI-Common-Lisp;"
+          (if buffer-file-coding-system
+              (concat " Coding:"
+                      (symbol-name
+                       (coding-system-get buffer-file-coding-system
+                                          'mime-charset)))
+            "") " -*-")
+  & \n & \n
+  _)
+
+(define-skeleton redshank-in-package-skeleton
+  "Inserts mode line and Common Lisp IN-PACKAGE form."
+  (slime-read-package-name "Package: ")
+  '(if (bobp) (redshank-mode-line-skeleton))
+  '(paredit-open-parenthesis)
+  "in-package #:" str
+  '(paredit-close-parenthesis) \n
+  \n _)
+  
 (define-skeleton redshank-defpackage-skeleton
   "Inserts a Common Lisp DEFPACKAGE skeleton."
-  (skeleton-read "Package: " (if v1
-                                 (or (ignore-errors
-                                       (file-name-sans-extension
-                                        (file-name-nondirectory
-                                         (buffer-file-name))))
-                                     "TEMP")))
-  (if (setq v1 (bobp)) ";;; -*- Mode:Lisp; Syntax:ANSI-Common-Lisp;")
-  & (if buffer-file-coding-system
-        (concat " Coding:"
-                (symbol-name 
-                 (coding-system-get buffer-file-coding-system 
-                                    'mime-charset))))
-  & " -*-"
-  & \n
-  & \n '(paredit-open-parenthesis) "defpackage #:" str
+  (skeleton-read "Package: " (or (ignore-errors
+                                   (file-name-sans-extension
+                                    (file-name-nondirectory
+                                     (buffer-file-name))))
+                                 "TEMP"))
+  '(paredit-open-parenthesis) "defpackage #:" str
   \n '(paredit-open-parenthesis)
      ":nicknames" ("Nickname: " " #:" str)
    & '(paredit-close-parenthesis) & \n
@@ -412,11 +432,9 @@ is formatted to:
         (kill-sexp))
   '(paredit-open-parenthesis)
    ":use #:CL" ((slime-read-package-name "USEd package: ") " #:" str)
-  '(paredit-close-parenthesis) 
   '(paredit-close-parenthesis)
-  \n \n (if v1 "(in-package #:") & str & ")" & \n &
-  \n
-  _)
+  '(paredit-close-parenthesis) \n
+  \n _)
 
 (define-skeleton redshank-defclass-skeleton
   "Inserts a Common Lisp DEFCLASS skeleton."
@@ -451,7 +469,7 @@ is formatted to:
 (defadvice redshank-defclass-skeleton
   (after redshank-format-defclass activate)
   "Align DEFCLASS slots."
-  (when redshank-reformat-defclass-skeletons
+  (when redshank-reformat-defclass-forms
     (save-excursion
       (backward-sexp)
       (redshank-align-defclass-slots))))
@@ -459,7 +477,7 @@ is formatted to:
 (defadvice redshank-defclass-slot-skeleton
   (after redshank-reformat-defclass activate)
   "Align DEFCLASS slots."
-  (when redshank-reformat-defclass-skeletons
+  (when redshank-reformat-defclass-forms
     (save-excursion
      (backward-up-list +2)
      (redshank-align-defclass-slots))))
