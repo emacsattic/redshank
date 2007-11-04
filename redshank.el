@@ -27,7 +27,7 @@
 ;; M-x customize-group RET redshank RET, or with
 ;; `eval-after-load':
 ;;
-;;   (eval-after-load 'redshank
+;;   (eval-after-load "redshank"
 ;;     '(progn ...redefine keys, etc....))
 ;;
 ;; This code was tested with Paredit 20, and should run at least in
@@ -235,7 +235,7 @@ COLUMN-WIDTHS is expected to be a list."
   (interactive "*")
   (flet ((redshank--frob-cond-branch ()
             (paredit-wrap-sexp +2)
-            (forward-sexp)                              
+            (forward-sexp)
             (redshank-maybe-splice-progn)))
     (save-excursion
       (unless (redshank--looking-at-or-inside "if")
@@ -287,7 +287,7 @@ With prefix argument, or if no suitable binding can be found,
                (goto-char let.start)
                (down-list)              ; move point from |(let ...
                (forward-sexp +2)        ; to behind last binder form
-               (backward-down-list)   
+               (backward-down-list)
                (paredit-newline)        ; insert new binder
                (let ((binder.start (point)))
                  (insert "(" var " " form ")")
@@ -327,7 +327,7 @@ With optional numeric argument, wrap N top-level forms."
              (redshank--frob-form "unless"))
             ((redshank--looking-at-or-inside "unless\\s-+(not")
              (redshank--frob-form "when"))
-            (t 
+            (t
              (error "Cowardly refusing to mutilate unknown form"))))))
 
 (defun redshank-align-forms-as-columns (beg end)
@@ -341,7 +341,7 @@ is formatted as:
 
   (define-symbol-macro MEM   (mem-of *cpu*))
   (define-symbol-macro IP    (ip-of *cpu*))
-  (define-symbol-macro STACK (stack-of *cpu*))" 
+  (define-symbol-macro STACK (stack-of *cpu*))"
  (interactive "*r")
   (save-restriction
     (narrow-to-region beg end)
