@@ -23,6 +23,14 @@
 ;;   (add-hook '...-mode-hook 'turn-on-redshank-mode)
 ;;
 ;; Also, this mode can be enabled with M-x redshank-mode.
+;;
+;; For all features to work, the accompanying redshank.lisp needs to
+;; be loaded along with SLIME.  A good way to achieve that is to add
+;; the following lines either to SLIME's site-init.lisp, or to
+;; .swank.lisp:
+;;
+;;   (load "/path/to/redshank-installation/redshank")
+;;
 ;; Customization of redshank can be accomplished with
 ;; M-x customize-group RET redshank RET, or with
 ;; `eval-after-load':
@@ -106,6 +114,7 @@
     ("l" . redshank-letify-form-up)
     ("n" . redshank-rewrite-negated-predicate)
     ("p" . redshank-maybe-splice-progn)
+    ("x" . redshank-extract-to-defun)
     ("C" . redshank-defclass-skeleton)
     ("P" . redshank-defpackage-skeleton)
     ("S" . redshank-defclass-slot-skeleton))
@@ -244,25 +253,6 @@ COLUMN-WIDTHS is expected to be a list."
   (delete-overlay redshank-letify-overlay))
 
 ;;;; Form Frobbing
-(defun redshank-condify-form ()
-  "Transform a Common Lisp IF form into an equivalent COND form."
-  (interactive "*")
-  (flet ((redshank--frob-cond-branch ()
-            (paredit-wrap-sexp +2)
-            (forward-sexp)
-            (redshank-maybe-splice-progn)))
-    (save-excursion
-      (unless (redshank--looking-at-or-inside "if")
-        (error "Cowardly refusing to mutilate other forms than IF"))
-      (paredit-forward-kill-word)
-      (insert "cond")
-      (just-one-space)
-      (redshank--frob-cond-branch)
-      (up-list)
-      (paredit-newline)
-      (save-excursion (insert "t "))
-      (redshank--frob-cond-branch))))
-
 (defun redshank-letify-form (var)
   "Extract the form at point into a new LET binding.
 The binding variable's name is requested in the mini-buffer."
@@ -309,6 +299,57 @@ With prefix argument, or if no suitable binding can be found,
                (backward-sexp)          ; ... and reindent it
                (indent-sexp))))
           (t (redshank-letify-form var)))))
+
+(defun redshank-extract-to-defun (start end name &optional package)
+  "Extracts region from START to END as new defun NAME.
+The marked region is replaced with a call, the actual function
+definition is placed on the kill ring.
+
+A best effort is made to determine free variables in the marked
+region and make them parameters of the extracted function.  This
+involves macro-exanding code, and as such might have side effects."
+  (interactive "r\nsName of extracted function: ")
+  (let* ((form-string (buffer-substring-no-properties start end))
+         (free-vars (slime-eval `(redshank:free-vars-for-emacs
+                                  ,(concat "(progn " form-string ")") 
+                                  ,(or package (slime-current-package)))
+                                package)))
+    (flet ((princ-to-string (o)
+             (with-output-to-string
+               (princ (if (null o) "()" o)))))
+      (with-temp-buffer
+        (insert "(defun " name " " (princ-to-string free-vars) "\n")
+        (insert form-string ")\n")
+        (goto-char (point-min))
+        (indent-sexp)
+        (kill-region-new (point-min) (point-max))
+        (message (substitute-command-keys
+                  "Extracted function `%s' now on kill ring; \\[yank] to insert at point.") ;
+                 name))
+      (delete-region start end)
+      (insert "(" name)
+      (mapcar (lambda (v) (insert " ") (princ v (current-buffer)))
+              free-vars)
+      (insert ")"))))
+
+(defun redshank-condify-form ()
+  "Transform a Common Lisp IF form into an equivalent COND form."
+  (interactive "*")
+  (flet ((redshank--frob-cond-branch ()
+            (paredit-wrap-sexp +2)
+            (forward-sexp)
+            (redshank-maybe-splice-progn)))
+    (save-excursion
+      (unless (redshank--looking-at-or-inside "if")
+        (error "Cowardly refusing to mutilate other forms than IF"))
+      (paredit-forward-kill-word)
+      (insert "cond")
+      (just-one-space)
+      (redshank--frob-cond-branch)
+      (up-list)
+      (paredit-newline)
+      (save-excursion (insert "t "))
+      (redshank--frob-cond-branch))))
 
 (defun redshank-eval-whenify-form (&optional n)
   "Wraps top-level form at point with (EVAL-WHEN (...) ...).
