@@ -308,7 +308,7 @@ definition is placed on the kill ring.
 A best effort is made to determine free variables in the marked
 region and make them parameters of the extracted function.  This
 involves macro-exanding code, and as such might have side effects."
-  (interactive "r\nsName of extracted function: ")
+  (interactive "r\nsName for extracted function: ")
   (let* ((form-string (buffer-substring-no-properties start end))
          (free-vars (slime-eval `(redshank:free-vars-for-emacs
                                   ,(concat "(progn " form-string ")") 
