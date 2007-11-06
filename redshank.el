@@ -61,7 +61,7 @@
 ;;; Code:
 (defconst redshank-version 0)
 
-(require 'cl)
+(eval-when-compile (require 'cl))
 (require 'paredit)
 (require 'skeleton)
 
