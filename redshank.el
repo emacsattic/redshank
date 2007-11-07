@@ -328,10 +328,7 @@ involves macro-exanding code, and as such might have side effects."
                   "Extracted function `%s' now on kill ring; \\[yank] to insert at point.") ;
                  name))
       (delete-region start end)
-      (insert "(" name)
-      (mapcar (lambda (v) (insert " ") (princ v (current-buffer)))
-              free-vars)
-      (insert ")"))))
+      (princ (list* name free-vars) (current-buffer)))))
 
 (defun redshank-condify-form ()
   "Transform a Common Lisp IF form into an equivalent COND form."
