@@ -86,7 +86,7 @@
 
 (defcustom redshank-prefix-key "C-x C-r"
   "*Prefix key sequence for redshank-mode commands.
-\\<redshank-mode-map>"
+\\{redshank-mode-map}"
   :type  'string
   :group 'redshank)
 
