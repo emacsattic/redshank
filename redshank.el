@@ -311,7 +311,7 @@ involves macro-exanding code, and as such might have side effects."
   (interactive "*r\nsName for extracted function: ")
   (let* ((form-string (buffer-substring-no-properties start end))
          (free-vars (slime-eval `(redshank:free-vars-for-emacs
-                                  ,(concat "(progn " form-string ")") 
+                                  ,(concat "(locally " form-string ")") 
                                   ,(or package (slime-current-package)))
                                 package)))
     (flet ((princ-to-string (o)

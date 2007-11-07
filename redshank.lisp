@@ -40,23 +40,21 @@
   (eql (or #+sbcl (sb-cltl2:variable-information symbol env))
        :special))
 
+(defmacro %extract-variable (variable specials)
+  (declare (special *free-variables*))
+  (when (or specials
+            (not (special-variable-p variable)))
+    (pushnew variable *free-variables*))
+  (gensym))
+
 (defun find-free-variables (form &key env (specials t))
-  (let* ((bindings (loop for v in (find-variables form env)
-                         collect (list v (gensym))))
-         (expanded-form
-          (third (macroexpand-all `(symbol-macrolet ,bindings ,form)
-                                  env)))
-         (vars '()))
-    (tree-walk expanded-form
-               (lambda (x)
-                 (when (symbolp x)
-                   (let ((binding (rassoc x bindings :key #'first)))
-                     (when binding
-                       (let ((symbol (first binding)))
-                         (when (or specials
-                                   (not (special-variable-p symbol)))
-                           (pushnew (first binding) vars))))))))
-    vars))
+  (let ((bindings (loop for v in (find-variables form env)
+                        collect (list v `(%extract-variable ,v ,specials))))
+        (*free-variables* '()))
+    (declare (special *free-variables*))
+    ;; macro-expanding picks up free variables as side effect
+    (macroexpand-all `(symbol-macrolet ,bindings ,form) env)
+    *free-variables*))
 
 (defun values-for-emacs (list &optional package)
   (with-standard-io-syntax
