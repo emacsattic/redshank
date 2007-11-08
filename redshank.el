@@ -25,11 +25,12 @@
 ;; Also, this mode can be enabled with M-x redshank-mode.
 ;;
 ;; For all features to work, the accompanying redshank.lisp needs to
-;; be loaded along with SLIME.  A good way to achieve that is to add
-;; the following lines either to SLIME's site-init.lisp, or to
-;; .swank.lisp:
+;; be loaded along with SLIME.  This happens automatically through
+;; slime-connected-hook.  If this is undesirable, it can be avoided by
+;; executing the following command before connecting to a Lisp:
+;; 
+;;   (redshank-slime-uninstall)
 ;;
-;;   (load "/path/to/redshank-installation/redshank")
 ;;
 ;; Customization of redshank can be accomplished with
 ;; M-x customize-group RET redshank RET, or with
@@ -103,6 +104,15 @@
            (function-item redshank-accessor-name/of)
            (function :tag "Other"))
   :group 'redshank)
+
+(eval-and-compile 
+  (defvar redshank-path
+    (let ((path (or (locate-library "redshank") load-file-name)))
+      (and path (file-name-directory path)))
+    "Directory containing the Redshank package.
+This is used to load the supporting Common Lisp library.  The
+default value is automatically computed from the location of the
+Emacs Lisp package."))
 
 ;;;; Minor Mode Definition
 (defconst redshank-keys
@@ -251,6 +261,20 @@ COLUMN-WIDTHS is expected to be a list."
 (defun redshank-unhighlight-binder ()
   (interactive)
   (delete-overlay redshank-letify-overlay))
+
+;;; Hooking into SLIME
+(defun redshank-on-connect ()
+  (slime-eval-async
+   `(cl:progn
+      (cl:pushnew (cl:pathname ,redshank-path) swank::*load-path*
+                  :test 'cl:equal)
+      (swank:swank-require :redshank))))
+
+(defun redshank-slime-install ()
+  (add-hook 'slime-connected-hook 'redshank-on-connect))
+
+(defun redshank-slime-uninstall ()
+  (remove-hook 'slime-connected-hook 'redshank-on-connect))
 
 ;;;; Form Frobbing
 (defun redshank-letify-form (var)
@@ -570,8 +594,10 @@ If point is not in a slot form, fall back to `slime-complete-form'.
 
 ;;;; Initialization
 (eval-after-load "slime"
-  '(substitute-key-definition 'slime-complete-form 'redshank-complete-form
-                              redshank-mode-map slime-mode-map))
+  '(progn
+     (substitute-key-definition 'slime-complete-form 'redshank-complete-form
+                                redshank-mode-map slime-mode-map)
+     (redshank-slime-install)))
 
 (add-hook 'pre-command-hook 'redshank-unhighlight-binder)
 (provide 'redshank)
