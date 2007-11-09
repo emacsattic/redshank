@@ -73,6 +73,7 @@
 (eval-and-compile (require 'cl))
 (require 'paredit)
 (require 'skeleton)
+(require 'easymenu)
 
 ;;;; Customizations
 (defgroup redshank nil
@@ -115,6 +116,28 @@ default value is automatically computed from the location of the
 Emacs Lisp package."))
 
 ;;;; Minor Mode Definition
+(defconst redshank-menu
+  (let ((CONNECTEDP '(redshank-connected-p))
+        (SLIMEP '(featurep 'slime)))
+    `("Redshank"
+      [ "Condify"                   redshank-condify-form t ]
+      [ "Extract to Defun"          redshank-extract-to-defun ,CONNECTEDP ]
+      [ "Extract to Enclosing Let"  redshank-letify-form-up t ]
+      [ "Rewrite Negated Predicate" redshank-rewrite-negated-predicate t ]
+      [ "Splice Progn"              redshank-maybe-splice-progn t ]
+      [ "Wrap into Eval-When"       redshank-eval-whenify-form t ]
+      "--"
+      [ "Align Defclass Slots"      redshank-align-defclass-slots t ]
+      [ "Align Forms as Columns"    redshank-align-forms-as-columns t ]
+      "--"
+      [ "Complete Form"             redshank-complete-form ,SLIMEP ]
+      [ "Insert Defclass Form"      redshank-defclass-skeleton t ]
+      [ "Insert Defclass Slot Form" redshank-defclass-slot-skeleton t ]
+      [ "Insert Defpackage Form"    redshank-defpackage-skeleton ,CONNECTEDP ]
+      [ "Insert In-Package Form"    redshank-in-package-skeleton ,CONNECTEDP ]
+      [ "Insert Mode Line"          redshank-mode-line-skeleton t ]))
+  "Standard menu for the Redshank minor mode.")
+
 (defconst redshank-keys
   '(("A" . redshank-align-forms-as-columns)
     ("a" . redshank-align-defclass-slots)
@@ -132,16 +155,20 @@ Emacs Lisp package."))
 
 (defvar redshank-mode-map
   (let ((map (make-sparse-keymap)))
-    (dolist (spec redshank-keys map)
+    (dolist (spec redshank-keys)
       (let* ((key-spec (concat redshank-prefix-key " " (car spec)))
              (key (read-kbd-macro key-spec)))
-        (define-key map key (cdr spec)))))
+        (define-key map key (cdr spec))))
+    (easy-menu-define menu-bar-redshank map "Redshank" redshank-menu)
+    map)
   "Keymap for the Redshank minor mode.")
 
 (define-minor-mode redshank-mode
   "Minor mode for editing and refactoring (Common) Lisp code."
   :lighter " Redshank"
-  :keymap `(,(read-kbd-macro redshank-prefix-key) . redshank-mode-map))
+  :keymap `(,(read-kbd-macro redshank-prefix-key) . redshank-mode-map)
+  (when redshank-mode
+    (easy-menu-add menu-bar-redshank redshank-mode-map)))
 
 (defun turn-on-redshank-mode ()
   "Turn on Redshank mode.  Please see function `redshank-mode'.
@@ -152,6 +179,12 @@ This function is designed to be added to hooks, for example:
   (redshank-mode +1))
 
 ;;;; Utility Functions
+(defun redshank-connected-p ()
+  "Checks whether Redshank is connected to an inferior Lisp via SLIME."
+  (and (featurep 'slime)
+       (slime-connected-p)
+       (slime-eval `(cl:packagep (cl:find-package :redshank)))))
+
 (defun redshank-accessor-name/get (slot-name)
   "GET-SLOT style accessor names."
   (concat "get-" slot-name))
