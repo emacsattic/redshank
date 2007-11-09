@@ -26,10 +26,8 @@
 ;;
 ;; For all features to work, the accompanying redshank.lisp needs to
 ;; be loaded along with SLIME.  This happens automatically through
-;; slime-connected-hook.  If this is undesirable, it can be avoided by
-;; executing the following command before connecting to a Lisp:
-;; 
-;;   (redshank-slime-uninstall)
+;; slime-connected-hook.  If this is undesirable, set variable
+;; `redshank-install-lisp-support' to nil before loading.
 ;;
 ;;
 ;; Customization of redshank can be accomplished with
@@ -90,6 +88,14 @@
   "*Prefix key sequence for redshank-mode commands.
 \\{redshank-mode-map}"
   :type  'string
+  :group 'redshank)
+
+(defcustom redshank-install-lisp-support t
+  "*Install Lisp-side support for Redshank.  
+If enabled, the REDSHANK package into a running Lisp when
+connecting via SLIME.  If disabled, some of Redshank's functions
+are not available."
+  :type  'boolean
   :group 'redshank)
 
 (defcustom redshank-reformat-defclass-forms t
@@ -633,7 +639,8 @@ If point is not in a slot form, fall back to `slime-complete-form'.
   '(progn
      (substitute-key-definition 'slime-complete-form 'redshank-complete-form
                                 redshank-mode-map slime-mode-map)
-     (redshank-slime-install)))
+     (when redshank-install-lisp-support
+       (redshank-slime-install))))
 
 (add-hook 'pre-command-hook 'redshank-unhighlight-binder)
 (provide 'redshank)
