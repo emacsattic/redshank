@@ -297,6 +297,7 @@ COLUMN-WIDTHS is expected to be a list."
 
 ;;; Hooking into SLIME
 (defun redshank-on-connect ()
+  "Activate Lisp-side support for Redshank."
   (slime-eval-async
    `(cl:progn
       (cl:pushnew (cl:pathname ,redshank-path) swank::*load-path*
@@ -304,9 +305,11 @@ COLUMN-WIDTHS is expected to be a list."
       (swank:swank-require :redshank))))
 
 (defun redshank-slime-install ()
+  "Install Redshank hook for SLIME connections."
   (add-hook 'slime-connected-hook 'redshank-on-connect))
 
 (defun redshank-slime-uninstall ()
+  "Uninstall Redshank hook from SLIME."
   (remove-hook 'slime-connected-hook 'redshank-on-connect))
 
 ;;;; Form Frobbing
@@ -622,8 +625,8 @@ If point is not in a slot form, fall back to `slime-complete-form'.
   "Align DEFCLASS slots."
   (when redshank-reformat-defclass-forms
     (save-excursion
-     (backward-up-list +2)
-     (redshank-align-defclass-slots))))
+      (backward-up-list +2)
+      (redshank-align-defclass-slots))))
 
 ;;;; Initialization
 (eval-after-load "slime"
