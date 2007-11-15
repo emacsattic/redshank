@@ -91,7 +91,7 @@
   :group 'redshank)
 
 (defcustom redshank-install-lisp-support t
-  "*Install Lisp-side support for Redshank.  
+  "*Install Lisp-side support for Redshank.
 If enabled, the REDSHANK package into a running Lisp when
 connecting via SLIME.  If disabled, some of Redshank's functions
 are not available."
@@ -112,7 +112,7 @@ are not available."
            (function :tag "Other"))
   :group 'redshank)
 
-(eval-and-compile 
+(eval-and-compile
   (defvar redshank-path
     (let ((path (or (locate-library "redshank") load-file-name)))
       (and path (file-name-directory path)))
@@ -377,7 +377,7 @@ involves macro-exanding code, and as such might have side effects."
   (interactive "*r\nsName for extracted function: ")
   (let* ((form-string (buffer-substring-no-properties start end))
          (free-vars (slime-eval `(redshank:free-vars-for-emacs
-                                  ,(concat "(locally " form-string ")") 
+                                  ,(concat "(locally " form-string ")")
                                   ,(or package (slime-current-package)))
                                 package)))
     (flet ((princ-to-string (o)
@@ -452,16 +452,16 @@ With optional numeric argument, wrap N top-level forms."
 (defun redshank-align-forms-as-columns (beg end)
   "Align S-expressions in region as columns.
 Example:
-  (define-symbol-macro MEM (mem-of *cpu*))
-  (define-symbol-macro IP (ip-of *cpu*))
-  (define-symbol-macro STACK (stack-of *cpu*))
+  \(define-symbol-macro MEM (mem-of *cpu*))
+  \(define-symbol-macro IP (ip-of *cpu*))
+  \(define-symbol-macro STACK (stack-of *cpu*))
 
 is formatted as:
 
-  (define-symbol-macro MEM   (mem-of *cpu*))
-  (define-symbol-macro IP    (ip-of *cpu*))
-  (define-symbol-macro STACK (stack-of *cpu*))"
- (interactive "*r")
+  \(define-symbol-macro MEM   (mem-of *cpu*))
+  \(define-symbol-macro IP    (ip-of *cpu*))
+  \(define-symbol-macro STACK (stack-of *cpu*))"
+  (interactive "*r")
   (save-restriction
     (narrow-to-region beg end)
     (goto-char beg)
@@ -567,7 +567,7 @@ If point is not in a slot form, fall back to `slime-complete-form'.
   "in-package #:" str
   '(paredit-close-parenthesis) \n
   \n _)
-  
+
 (define-skeleton redshank-defpackage-skeleton
   "Inserts a Common Lisp DEFPACKAGE skeleton."
   (skeleton-read "Package: " (or (ignore-errors
