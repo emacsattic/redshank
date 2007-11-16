@@ -165,8 +165,8 @@ Emacs Lisp package."))
       (let* ((key-spec (concat redshank-prefix-key " " (car spec)))
              (key (read-kbd-macro key-spec)))
         (define-key map key (cdr spec))))
-    (define-key map [M-mouse-1] nil)
-    (define-key map [M-drag-mouse-1] nil)
+    (define-key map [M-mouse-1] 'redshank-ignore-event)
+    (define-key map [M-drag-mouse-1] 'redshank-ignore-event)
     (define-key map [M-down-mouse-1] 'redshank-copy-thing-at-point)
     (easy-menu-define menu-bar-redshank map "Redshank" redshank-menu)
     map)
@@ -296,6 +296,12 @@ COLUMN-WIDTHS is expected to be a list."
        transient-mark-mode
        (boundp 'mark-active)
        mark-active))
+
+(defun redshank-ignore-event (event)
+  "Ignores a (mouse) event.
+This is used to override mouse bindings in a minor mode keymap,
+but does otherwise nothing."
+  (interactive "e"))
 
 ;;; Highlighting
 (defvar redshank-letify-overlay
@@ -562,6 +568,9 @@ clicking on a symbol, number, string, etc., inserts it,
 clicking within a (line) comment, inserts the comment up to the
 end of the line.
 
+When `transient-mark-mode' is enabled, and a region is
+active, it is deleted.
+
 This should be bound to a mouse click event type."
   (interactive "*e")
   (let* ((echo-keystrokes 0)
@@ -588,7 +597,14 @@ This should be bound to a mouse click event type."
                   (not (equal "" contents)))
              (when (redshank--region-active-p)
                (delete-region (region-beginning) (region-end)))
-             (insert contents))
+             (unless (or (bolp)
+                         (save-excursion
+                           (backward-char)
+                           (looking-at "\\s-\\|\\s(")))
+               (insert " "))
+             (insert contents)
+             (unless (or (eolp) (looking-at "\\s-\\|\\s)"))
+               (insert " ")))
             (t
              (message "Don't know what to copy?"))))))
 
