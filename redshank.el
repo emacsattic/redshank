@@ -165,6 +165,9 @@ Emacs Lisp package."))
       (let* ((key-spec (concat redshank-prefix-key " " (car spec)))
              (key (read-kbd-macro key-spec)))
         (define-key map key (cdr spec))))
+    (define-key map [M-mouse-1] nil)
+    (define-key map [M-drag-mouse-1] nil)
+    (define-key map [M-down-mouse-1] 'redshank-copy-thing-at-point)
     (easy-menu-define menu-bar-redshank map "Redshank" redshank-menu)
     map)
   "Keymap for the Redshank minor mode.")
@@ -286,6 +289,13 @@ COLUMN-WIDTHS is expected to be a list."
     (save-excursion
       (backward-up-list +3)
       (looking-at "(defclass\\S_"))))
+
+(defun redshank--region-active-p ()
+  "Returns true if `transient-mark-mode' is used and region is active."
+  (and (boundp 'transient-mark-mode)
+       transient-mark-mode
+       (boundp 'mark-active)
+       mark-active))
 
 ;;; Highlighting
 (defvar redshank-letify-overlay
@@ -544,6 +554,43 @@ If point is not in a slot form, fall back to `slime-complete-form'.
           (save-excursion
             (backward-up-list +2)      ; to beginning of defclass form
             (redshank-align-defclass-slots)))))))
+
+(defun redshank-copy-thing-at-point (event)
+  "Insert at point the syntactical element clicked on with the mouse.
+Clicking on an open parenthesis inserts the whole form,
+clicking on a symbol, number, string, etc., inserts it,
+clicking within a (line) comment, inserts the comment up to the
+end of the line.
+
+This should be bound to a mouse click event type."
+  (interactive "*e")
+  (let* ((echo-keystrokes 0)
+	 (start-posn (event-start event))
+	 (start-point (posn-point start-posn))
+	 (start-window (posn-window start-posn)))
+    (let ((contents
+           (with-current-buffer (window-buffer start-window)
+             (save-excursion
+               (goto-char start-point)
+               (cond ((paredit-in-comment-p)
+                      (skip-syntax-backward "^<")
+                      (skip-syntax-backward "<")
+                      (let ((comment.start (point)))
+                        (end-of-line)
+                        (buffer-substring comment.start (point))))
+                     ((and (not (paredit-in-string-p))
+                           (looking-at ";"))
+                      (let ((comment.start (point)))
+                        (end-of-line)
+                        (buffer-substring comment.start (point))))
+                     (t (thing-at-point 'sexp)))))))
+      (cond ((and (stringp contents)
+                  (not (equal "" contents)))
+             (when (redshank--region-active-p)
+               (delete-region (region-beginning) (region-end)))
+             (insert contents))
+            (t
+             (message "Don't know what to copy?"))))))
 
 ;;;; Skeletons
 (define-skeleton redshank-mode-line-skeleton
