@@ -176,7 +176,9 @@ Emacs Lisp package."))
   "Keymap for the Redshank minor mode.")
 
 (define-minor-mode redshank-mode
-  "Minor mode for editing and refactoring (Common) Lisp code."
+  "Minor mode for editing and refactoring (Common) Lisp code.
+
+\\{redshank-mode-map}"
   :lighter " Redshank"
   :keymap `(,(read-kbd-macro redshank-prefix-key) . redshank-mode-map)
   (when redshank-mode
