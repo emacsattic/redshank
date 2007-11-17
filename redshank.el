@@ -229,7 +229,9 @@ This function is designed to be added to hooks, for example:
 
 (defun redshank-canonical-slot-name/% (slot-name)
   "%SLOT style slots names."
-  (concat "%" slot-name))
+  (if (string-match "^%" slot-name)
+      slot-name
+    (concat "%" slot-name)))
 
 (defun redshank-canonical-slot-name (slot-name)
   "Returns canonicalized slot name.  You can use this hook to
