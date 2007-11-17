@@ -106,23 +106,21 @@ are not available."
   :type  'boolean
   :group 'redshank)
 
-(defcustom redshank-canonical-slot-name-function
-  'identity
-  "*Function which, given a slot-name, returns a canonicalised
-slot name. Use it to enforce certain slot naming style."
-  :type  '(radio
-           (function-item redshank-canonical-slot-name/%)
-           (function-item identity)
-           (function :tag "Other"))
-  :group 'redshank)
-
-(defcustom redshank-accessor-name-function
-  'redshank-accessor-name/get
+(defcustom redshank-accessor-name-function 'redshank-accessor-name/get
   "*Function which, given a slot-name, returns the accessor name."
   :type  '(radio
            (function-item redshank-accessor-name/get)
            (function-item redshank-accessor-name/of)
            (function-item redshank-accessor-name/%)
+           (function :tag "Other"))
+  :group 'redshank)
+
+(defcustom redshank-canonical-slot-name-function 'identity
+  "*Function which, given a slot-name, returns a canonicalized
+slot name.  Use it to enforce certain slot naming style."
+  :type  '(radio
+           (function-item redshank-canonical-slot-name/%)
+           (function-item identity)
            (function :tag "Other"))
   :group 'redshank)
 
@@ -210,17 +208,6 @@ This function is designed to be added to hooks, for example:
        (slime-connected-p)
        (slime-eval `(cl:packagep (cl:find-package :redshank)))))
 
-(defun redshank-canonical-slot-name/% (slot-name)
-  (concat "%" slot-name))
-
-(defun redshank-canonical-slot-name (slot-name)
-  "Return canonicalised slot name. You can use this hook to
-  ensure certain style in naming your slots, for instance
-  %slotname."
-  (if redshank-canonical-slot-name-function
-      (funcall redshank-canonical-slot-name-function slot-name)
-    slot-name))
-
 (defun redshank-accessor-name/get (slot-name)
   "GET-SLOT style accessor names."
   (concat "get-" slot-name))
@@ -229,16 +216,28 @@ This function is designed to be added to hooks, for example:
   "SLOT-OF style accessor names."
   (concat slot-name "-of"))
 
-(defun redshank-accessor-name/% (name)
-  (string-match "^%\\(.*\\)$" name)
-  (or (match-string 1 name)
-      name))
+(defun redshank-accessor-name/% (slot-name)
+  "Removes preceding percent signs (%) from slot names."
+  (string-match "^%+\\(.*\\)$" slot-name)
+  (or (match-string 1 slot-name)
+      slot-name))
 
 (defun redshank-accessor-name (slot-name)
-  (if (or (null redshank-accessor-name-function)
-          (functionp redshank-accessor-name-function))
+  (if (functionp redshank-accessor-name-function)
       (funcall redshank-accessor-name-function slot-name)
     (redshank-accessor-name/get slot-name)))
+
+(defun redshank-canonical-slot-name/% (slot-name)
+  "%SLOT style slots names."
+  (concat "%" slot-name))
+
+(defun redshank-canonical-slot-name (slot-name)
+  "Returns canonicalized slot name.  You can use this hook to
+ensure certain style in naming your slots, for instance
+%SLOT."
+  (if (functionp redshank-canonical-slot-name-function)
+      (funcall redshank-canonical-slot-name-function slot-name)
+    slot-name))
 
 (defun redshank--looking-at-or-inside (spec)
   (let ((form-regex (concat "(" spec "\\S_"))
@@ -698,8 +697,8 @@ This should be bound to a mouse click event type."
        ;; Ugly, but skeleton-read _must_ have the first str literal 
        '(backward-delete-char (length str))
        (redshank-canonical-slot-name str) 
-	" :accessor " (redshank-accessor-name str)
-        " :initarg :" str
+       " :accessor " (redshank-accessor-name str)
+       " :initarg :" str
        '(paredit-close-parenthesis) \n) & '(join-line)
   '(paredit-close-parenthesis)
   ;; \n "(:default-initargs " - ")" ;; add to your liking...
@@ -712,10 +711,14 @@ This should be bound to a mouse click event type."
   ((skeleton-read "Slot: ")
    '(indent-according-to-mode)
    '(paredit-open-parenthesis)
-    str " :accessor " (redshank-accessor-name str)
-    " :initarg :" str
+   str
+   ;; Ugly, but skeleton-read _must_ have the first str literal 
+   '(backward-delete-char (length str))
+   (redshank-canonical-slot-name str)    
+   " :accessor " (redshank-accessor-name str)
+   " :initarg :" str
    '(paredit-close-parenthesis) \n) & '(join-line)
-  _)
+   _)
 
 (defadvice redshank-defclass-skeleton
   (after redshank-format-defclass activate)
