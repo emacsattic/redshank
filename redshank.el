@@ -106,12 +106,23 @@ are not available."
   :type  'boolean
   :group 'redshank)
 
+(defcustom redshank-canonical-slot-name-function
+  'identity
+  "*Function which, given a slot-name, returns a canonicalised
+slot name. Use it to enforce certain slot naming style."
+  :type  '(radio
+           (function-item redshank-canonical-slot-name/%)
+           (function-item identity)
+           (function :tag "Other"))
+  :group 'redshank)
+
 (defcustom redshank-accessor-name-function
   'redshank-accessor-name/get
   "*Function which, given a slot-name, returns the accessor name."
   :type  '(radio
            (function-item redshank-accessor-name/get)
            (function-item redshank-accessor-name/of)
+           (function-item redshank-accessor-name/%)
            (function :tag "Other"))
   :group 'redshank)
 
@@ -199,6 +210,17 @@ This function is designed to be added to hooks, for example:
        (slime-connected-p)
        (slime-eval `(cl:packagep (cl:find-package :redshank)))))
 
+(defun redshank-canonical-slot-name/% (slot-name)
+  (concat "%" slot-name))
+
+(defun redshank-canonical-slot-name (slot-name)
+  "Return canonicalised slot name. You can use this hook to
+  ensure certain style in naming your slots, for instance
+  %slotname."
+  (if redshank-canonical-slot-name-function
+      (funcall redshank-canonical-slot-name-function slot-name)
+    slot-name))
+
 (defun redshank-accessor-name/get (slot-name)
   "GET-SLOT style accessor names."
   (concat "get-" slot-name))
@@ -206,6 +228,11 @@ This function is designed to be added to hooks, for example:
 (defun redshank-accessor-name/of (slot-name)
   "SLOT-OF style accessor names."
   (concat slot-name "-of"))
+
+(defun redshank-accessor-name/% (name)
+  (string-match "^%\\(.*\\)$" name)
+  (or (match-string 1 name)
+      name))
 
 (defun redshank-accessor-name (slot-name)
   (if (or (null redshank-accessor-name-function)
@@ -667,7 +694,11 @@ This should be bound to a mouse click event type."
   \n '(paredit-open-parenthesis)
       ((skeleton-read "Slot: ")
        '(paredit-open-parenthesis)
-        str " :accessor " (redshank-accessor-name str)
+       str
+       ;; Ugly, but skeleton-read _must_ have the first str literal 
+       '(backward-delete-char (length str))
+       (redshank-canonical-slot-name str) 
+	" :accessor " (redshank-accessor-name str)
         " :initarg :" str
        '(paredit-close-parenthesis) \n) & '(join-line)
   '(paredit-close-parenthesis)
