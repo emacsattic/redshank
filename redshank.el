@@ -69,7 +69,7 @@
 ;; found at <http://www.foldr.org/~michaelw/lisp/redshank/>.
 
 ;;; Code:
-(defconst redshank-version 0)
+(defconst redshank-version 1)
 
 (eval-and-compile (require 'cl))
 (require 'paredit)
