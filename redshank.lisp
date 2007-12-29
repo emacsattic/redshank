@@ -1,6 +1,6 @@
 (cl:defpackage #:redshank
   (:nicknames #:clee)
-  (:use #:CL)
+  (:use #:cl)
   (:export #:free-vars-for-emacs
            #:values-for-emacs
            

@@ -679,7 +679,7 @@ This should be bound to a mouse click event type."
         (backward-up-list)
         (kill-sexp))
   '(paredit-open-parenthesis)
-   ":use #:CL" ((slime-read-package-name "USEd package: ") " #:" str)
+   ":use #:cl" ((slime-read-package-name "USEd package: ") " #:" str)
   '(paredit-close-parenthesis)
   '(paredit-close-parenthesis) \n
   \n _)
