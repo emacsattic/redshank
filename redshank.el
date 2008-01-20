@@ -134,10 +134,10 @@ slot name.  Use it to enforce certain slot naming style."
 (defcustom redshank-asdf-component-mapping
   '(("\\.html\\'"             :html-file)
     ("\\.lisp\\'"             :file)
-    ("\\.\\(?:lsp\\|cl\\)\\'" :file t)
+    ("\\.\\(?:lsp\\|cl\\)\\'" :file redshank-asdf-make-spec/file-type)
     ("\\.c\\'"                :c-source-file)
     ("\\.java\\'"             :java-source-file)
-    ("."                      :static-file t))
+    ("."                      :static-file redshank-asdf-make-spec/filename))
   "Mapping of file names to ASDF components via regexp."
   ;; XXX :type ?
   :group 'redshank)
@@ -390,13 +390,20 @@ but does otherwise nothing."
                  (file-name-directory spec)
                  (file-name-nondirectory spec))))))
 
+(defun redshank-asdf-make-spec/file-type (filename)
+  (list (file-name-sans-extension filename)
+        :type (file-name-extension filename)))
+
+(defun redshank-asdf-make-spec/filename (filename)
+  (list filename))
+
 (defun redshank-asdf-classify-component (directory filename)
   (dolist (mapping redshank-asdf-component-mapping)
-    (destructuring-bind (regex tag &optional extensionp) mapping
+    (destructuring-bind (regex tag &optional filename-fn) mapping
       (when (string-match regex (concat directory filename))
-        (return `(,tag ,(file-name-sans-extension filename)
-                       ,@(when (and extensionp (file-name-extension filename))
-                           `(:type ,(file-name-extension filename)))))))))
+        (return `(,tag ,@(if filename-fn
+                             (funcall filename-fn filename)
+                           (list (file-name-sans-extension filename)))))))))
 
 (defun redshank-asdf-insert-module-components (directory)
   "Inserts DIRECTORY as ASDF module into current buffer.
