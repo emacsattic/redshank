@@ -395,7 +395,8 @@ but does otherwise nothing."
         :type (file-name-extension filename)))
 
 (defun redshank-asdf-make-spec/filename (filename)
-  (list filename))
+  (list* filename (when (file-name-extension filename)
+                    (list :pathname filename))))
 
 (defun redshank-asdf-classify-component (directory filename)
   (dolist (mapping redshank-asdf-component-mapping)
@@ -833,8 +834,10 @@ This should be bound to a mouse click event type."
      '(paredit-close-parenthesis)
   \n ":serial t"
   \n ";; components likely need manual reordering"
-  \n ":components " (redshank-asdf-insert-module-components
-                     (read-directory-name "Directory: "))
+  \n ":components " (condition-case nil
+                        (redshank-asdf-insert-module-components
+                         (read-directory-name "Directory: "))
+                      ((quit) "()"))
   \n ";; :long-description \"\""
   \n '(paredit-close-parenthesis)
   \n _)
