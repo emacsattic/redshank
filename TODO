@@ -53,3 +53,6 @@ except the default slot accessor should be :reader
 ** DEFCLASS vertical layout
 <Xach> michaelw: slot name on its own line, and every slot option/value pair
        on their own lines.
+
+** import symbols with explicitly mentioned package (add :import-from clause
+   to defpackage form), and shorten them.
