@@ -170,6 +170,7 @@ Emacs Lisp package."))
       [ "Condify"                   redshank-condify-form t ]
       [ "Extract to Defun"          redshank-extract-to-defun ,CONNECTEDP ]
       [ "Extract to Enclosing Let"  redshank-letify-form-up t ]
+      [ "Enclose form with Lambda"  redshank-enclose-form-with-lambda ]
       [ "Rewrite Negated Predicate" redshank-rewrite-negated-predicate t ]
       [ "Splice Progn"              redshank-maybe-splice-progn t ]
       [ "Wrap into Eval-When"       redshank-eval-whenify-form t ]
@@ -193,6 +194,7 @@ Emacs Lisp package."))
     ("e" . redshank-eval-whenify-form)
     ("f" . redshank-complete-form)
     ("l" . redshank-letify-form-up)
+    ("C-l" . redshank-enclose-form-with-lambda)
     ("n" . redshank-rewrite-negated-predicate)
     ("p" . redshank-maybe-splice-progn)
     ("x" . redshank-extract-to-defun)
@@ -566,6 +568,33 @@ involves macro-exanding code, and as such might have side effects."
                  name))
       (delete-region start end)
       (princ (list* name free-vars) (current-buffer)))))
+
+(defun redshank-enclose-form-with-lambda (arglist)
+  "Enclose form with lambda expression with parameter VAR.
+With prefix argument ARG, enclose ARG upward forms.
+
+Example:
+  \(foo x (bar y| z) qux)
+
+\\[redshank-enclose-form-with-lambda] RET RET yields:
+
+  \(foo x (lambda (y) (bar y| z)) qux)"
+  (interactive
+   (let ((arglist (thing-at-point 'symbol)))
+     (when (and (stringp arglist)
+                (string-match "[(]" arglist))
+       (setq arglist ""))
+     (list (read-string "Lambda arglist: " arglist))))
+  (save-excursion
+    (call-interactively 'backward-up-list)
+    (paredit-wrap-sexp +1)
+    (insert "lambda (" arglist ")")
+    (if (> (- (line-end-position) (line-beginning-position))
+           (current-fill-column))
+        (newline)
+      (insert " "))
+    (backward-up-list)
+    (indent-sexp)))
 
 (defun redshank-condify-form ()
   "Transform a Common Lisp IF form into an equivalent COND form."
