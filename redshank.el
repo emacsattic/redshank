@@ -216,6 +216,7 @@ Emacs Lisp package."))
     map)
   "Keymap for the Redshank minor mode.")
 
+;;;###autoload
 (define-minor-mode redshank-mode
   "Minor mode for editing and refactoring (Common) Lisp code.
 
@@ -225,6 +226,7 @@ Emacs Lisp package."))
   (when redshank-mode
     (easy-menu-add menu-bar-redshank redshank-mode-map)))
 
+;;;###autoload
 (defun turn-on-redshank-mode ()
   "Turn on Redshank mode.  Please see function `redshank-mode'.
 
