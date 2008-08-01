@@ -788,9 +788,13 @@ This should be bound to a mouse click event type."
                            (backward-char)
                            (looking-at "\\s-\\|\\s(")))
                (insert " "))
-             (insert contents)
-             (unless (or (eolp) (looking-at "\\s-\\|\\s)"))
-               (insert " ")))
+             (let ((contents.start (point)))
+               (insert contents)
+               (unless (or (eolp) (looking-at "\\s-\\|\\s)"))
+                 (insert " "))
+               (save-excursion
+                 (goto-char contents.start)
+                 (indent-sexp))))
             (t
              (message "Don't know what to copy?"))))))
 
