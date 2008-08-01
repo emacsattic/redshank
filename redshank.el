@@ -483,7 +483,7 @@ Uses `slime-read-system-name' if it is available."
    `(cl:progn
       (cl:pushnew (cl:pathname ,redshank-path) swank::*load-path*
                   :test 'cl:equal)
-      (swank:swank-require :redshank))))
+      (cl:ignore-errors (swank:swank-require :redshank)))))
 
 (defun redshank-slime-install ()
   "Install Redshank hook for SLIME connections."
