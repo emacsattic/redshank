@@ -564,7 +564,7 @@ involves macro-exanding code, and as such might have side effects."
         (insert form-string ")\n")
         (goto-char (point-min))
         (indent-sexp)
-        (kill-region-new (point-min) (point-max))
+        (paredit-hack-kill-region (point-min) (point-max))
         (message (substitute-command-keys
                   "Extracted function `%s' now on kill ring; \\[yank] to insert at point.") ;
                  name))

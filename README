@@ -11,7 +11,7 @@ are welcome.
 The number of Elisp library dependencies is fairly small:
 
 * Paredit 
-Version 20 is required.  Download from
+Version 21 is required.  Download from
 <http://mumble.net/~campbell/emacs/paredit.el>.
 
 * cl, skeleton, easymenu 
