@@ -9,7 +9,7 @@
 ;; Redshank, n.  A common Old World limicoline bird (Totanus
 ;;   calidris), having the legs and feet pale red. The spotted
 ;;   redshank (T. fuscus) is larger, and has orange-red legs.
-;;   Called also redleg and _clee_.
+;;   Called also redleg and _CLEE_.
 
 ;;;; Commentary
 ;;; Setup
@@ -23,7 +23,11 @@
 ;;   (autoload 'turn-on-redshank-mode "redshank"
 ;;     "Turn on Redshank mode.  Please see function `redshank-mode'."
 ;;     t)
-;;   (add-hook '...-mode-hook 'turn-on-redshank-mode)
+;;   (add-hook 'lisp-mode-hook 'turn-on-redshank-mode)
+;;   (autoload 'asdf-mode "redshank"
+;;     "Minor mode for editing ASDF files." t)
+;;   (autoload 'turn-on-asdf-mode "redshank"
+;;     "Turn on ASDF mode.  Please see function `asdf-mode'." t)
 ;;
 ;; Also, this mode can be enabled with M-x redshank-mode.
 ;;
@@ -43,12 +47,16 @@
 ;; Some of the skeleton functions (like `redshank-in-package-skeleton' or
 ;; `redshank-mode-line-skeleton') are good candidates for autoinsert:
 ;;
-;;   (add-to-list 'auto-insert-alist '(lisp-mode . redshank-in-package-skeleton))
-;;   (add-to-list 'auto-insert-alist '(asdf-mode . redshank-asdf-defsystem-skeleton))
+;;   (add-to-list 'auto-insert-alist
+;;                '(lisp-mode . [redshank-mode-line-skeleton
+;;                               redshank-in-package-skeleton]))
+;;   (add-to-list 'auto-insert-alist
+;;                '(asdf-mode . [redshank-mode-line-skeleton
+;;                               redshank-asdf-defsystem-skeleton]))
 ;;   (add-to-list 'auto-mode-alist '("\\.asdf?\\'" . asdf-mode))
 ;;
 ;;
-;; This code was tested with Paredit 20, and should run at least in
+;; This code was tested with Paredit 21, and should run at least in
 ;; GNU Emacs 22 and later.
 
 ;;; To Do
