@@ -115,15 +115,6 @@ are not available."
   :type  'boolean
   :group 'redshank)
 
-(defcustom redshank-accessor-name-function 'redshank-accessor-name/get
-  "*Function which, given a slot-name, returns the accessor name."
-  :type  '(radio
-           (function-item redshank-accessor-name/get)
-           (function-item redshank-accessor-name/of)
-           (function-item redshank-accessor-name/%)
-           (function :tag "Other"))
-  :group 'redshank)
-
 (defcustom redshank-canonical-slot-name-function 'identity
   "*Function which, given a slot-name, returns a canonicalized
 slot name.  Use it to enforce certain slot naming style."
@@ -133,6 +124,35 @@ slot name.  Use it to enforce certain slot naming style."
            (function :tag "Other"))
   :group 'redshank)
 
+(defcustom redshank-accessor-name-function 'redshank-accessor-name/get
+  "*Function which, given a slot-name, returns the accessor name."
+  :type  '(radio
+           (function-item redshank-accessor-name/get)
+           (function-item redshank-accessor-name/of)
+           (function-item redshank-accessor-name/ref)
+           (function-item redshank-accessor-name/%)
+           (function :tag "Other"))
+  :group 'redshank)
+
+(defcustom redshank-initarg-name-function 'redshank-initarg-name/keyword
+  "*Function which, given a slot-name, returns a fitting initarg name."
+  :type  '(radio
+           (function-item redshank-initarg-name/keyword)
+           (function-item redshank-initarg-name/symbol)
+           (function :tag "Other"))
+  :group 'redshank)
+
+(defcustom redshank-canonical-package-designator-function
+  'redshank-package-designator/uninterned-symbol
+  "*Function which, given a package-name, returns a canonicalized
+package designator."
+  :type  '(radio
+           (function-item redshank-package-designator/uninterned-symbol)
+           (function-item redshank-package-designator/keyword)
+           (function-item redshank-package-designator/symbol)
+           (function-item redshank-package-designator/string)
+           (function :tag "Other"))
+  :group 'redshank)
 (defcustom redshank-licence-names
   '("BSD-style" "GPL" "LGPL" "LLGPL" "MIT" "MIT-style")
   "List of (short) licence names."
@@ -208,6 +228,8 @@ Emacs Lisp package."))
     ("x" . redshank-extract-to-defun)
     ("C" . redshank-defclass-skeleton)
     ("P" . redshank-defpackage-skeleton)
+    ("I" . redshank-in-package-skeleton)
+    ("M" . redshank-mode-line-skeleton)
     ("S" . redshank-defclass-slot-skeleton))
   "Standard key bindings for the Redshank minor mode.")
 
@@ -250,19 +272,23 @@ This function is designed to be added to hooks, for example:
        (slime-connected-p)
        (slime-eval `(cl:packagep (cl:find-package :redshank)))))
 
+(defun redshank-accessor-name/% (slot-name)
+  "Removes preceding percent signs (%) from slot names."
+  (if (string-match "^%+\\(.*\\)$" slot-name)
+      (match-string-no-properties 1 slot-name)
+    slot-name))
+
 (defun redshank-accessor-name/get (slot-name)
   "GET-SLOT style accessor names."
-  (concat "get-" slot-name))
+  (concat "get-" (redshank-accessor-name/% slot-name)))
 
 (defun redshank-accessor-name/of (slot-name)
   "SLOT-OF style accessor names."
-  (concat slot-name "-of"))
+  (concat (redshank-accessor-name/% slot-name) "-of"))
 
-(defun redshank-accessor-name/% (slot-name)
-  "Removes preceding percent signs (%) from slot names."
-  (string-match "^%+\\(.*\\)$" slot-name)
-  (or (match-string 1 slot-name)
-      slot-name))
+(defun redshank-accessor-name/ref (slot-name)
+  "SLOT-REF style accessor names."
+  (concat (redshank-accessor-name/% slot-name) "-ref"))
 
 (defun redshank-accessor-name (slot-name)
   (if (functionp redshank-accessor-name-function)
@@ -283,6 +309,18 @@ ensure certain style in naming your slots, for instance
       (funcall redshank-canonical-slot-name-function slot-name)
     slot-name))
 
+(defun redshank-initarg-name (slot-name)
+  (if (functionp redshank-initarg-name-function)
+      (funcall redshank-initarg-name-function slot-name)
+    (redshank-initarg-name/keyword slot-name)))
+
+(defun redshank-initarg-name/keyword (slot-name)
+  (concat ":" (redshank-accessor-name/% slot-name)))
+
+(defun redshank-initarg-name/symbol (slot-name)
+  (concat "'" (redshank-accessor-name/% slot-name)))
+
+;;;
 (defun redshank--looking-at-or-inside (spec)
   (let ((form-regex (concat "(" spec "\\S_"))
         (here.point (point)))
@@ -324,6 +362,36 @@ LABELS or FLET.)"
 (defun redshank--symbol-namep (symbol)
   (and (stringp symbol)
        (not (string= symbol ""))))
+
+(defun redshank--trim-whitespace (string)
+  (when (string-match "^\\s *\\(.*?\\)\\s *$" string)
+    (match-string-no-properties 1 string)))
+
+(defun redshank-canonical-package-name (package-name)
+  (and package-name (not (string= "" package-name))
+       ;; very naive
+       (lexical-let ((package-name (redshank--trim-whitespace package-name)))
+         (if (string-match "^#?:\\(.*\\)$" package-name)
+             (match-string-no-properties 1 package-name)
+           package-name))))
+
+(defun redshank-canonical-package-designator (package-name)
+  (and package-name (not (string= "" package-name))
+       (funcall redshank-canonical-package-designator-function
+                (redshank-canonical-package-name package-name))))
+
+(defun redshank-package-designator/uninterned-symbol (package-name)
+  (concat "#:" (downcase package-name)))
+
+(defun redshank-package-designator/keyword (package-name)
+  (concat ":" (downcase package-name)))
+
+(defun redshank-package-designator/symbol (package-name)
+  (downcase package-name))
+
+(defun redshank-package-designator/string (package-name)
+  (prin1-to-string (upcase package-name)))
+
 
 (defun redshank--end-of-sexp-column ()
   "Move point to end of current form, neglecting trailing whitespace."
@@ -384,6 +452,30 @@ but does otherwise nothing."
      (insert (or (progn ,@body) ""))
      (paredit-doublequote)
      nil))
+
+;; lenient variant of `slime-read-package-name'
+(defun redshank-read-package-name (prompt &optional initial-value)
+  "Read a package name from the minibuffer, prompting with PROMPT."
+  (let ((completion-ignore-case t))
+    (redshank-canonical-package-name
+     (completing-read prompt (when (featurep 'slime)
+                               (slime-bogus-completion-alist 
+                                (slime-eval 
+                                 `(swank:list-all-package-names t))))
+                      nil nil initial-value nil initial-value))))
+
+(defun redshank-find-potential-buffer-package ()
+  (redshank-canonical-package-name
+   (or slime-buffer-package
+       (and (fboundp 'slime-find-buffer-package)
+            (slime-find-buffer-package))
+       (let ((case-fold-search t)
+             (regexp (concat "^(\\(cl:\\|common-lisp:\\)?defpackage\\>[ \t']*"
+                             "\\([^()]+\\)")))
+         (save-excursion
+           (when (or (re-search-backward regexp nil t)
+                     (re-search-forward  regexp nil t))
+             (match-string-no-properties 2)))))))
 
 ;;; ASDF
 (defun redshank-walk-filesystem (spec enter-fn leave-fn)
@@ -738,7 +830,7 @@ If point is not in a slot form, fall back to `slime-complete-form'.
       (call-interactively 'slime-complete-form)
     (backward-up-list)
     (down-list)
-    (let ((slot-name (thing-at-point 'symbol)))
+    (let ((slot-name (substring-no-properties (thing-at-point 'symbol))))
       (when slot-name
         (forward-sexp)
         (just-one-space)
@@ -748,7 +840,7 @@ If point is not in a slot form, fall back to `slime-complete-form'.
               (forward-sexp)))
           (delete-region start (point)))
         (insert ":accessor " (redshank-accessor-name slot-name)
-                " :initarg :" slot-name)
+                " :initarg " (redshank-initarg-name slot-name))
         (up-list)
         (when redshank-reformat-defclass-forms
           (save-excursion
@@ -812,39 +904,45 @@ This should be bound to a mouse click event type."
   nil
   (concat ";;; -*- Mode:Lisp; Syntax:ANSI-Common-Lisp;"
           (if buffer-file-coding-system
-              (concat " Coding:"
-                      (symbol-name
-                       (coding-system-get buffer-file-coding-system
-                                          'mime-charset)))
+              (let ((coding (coding-system-get buffer-file-coding-system
+                                               'mime-charset)))
+                (if coding (concat " Coding:" (symbol-name coding))
+                  ""))
             "") " -*-")
   & \n & \n
   _)
 
 (define-skeleton redshank-in-package-skeleton
   "Inserts mode line and Common Lisp IN-PACKAGE form."
-  (slime-read-package-name "Package: ")
+  (redshank-canonical-package-designator
+   (redshank-read-package-name "Package: "
+                               (redshank-find-potential-buffer-package)))
   '(if (bobp) (redshank-mode-line-skeleton))
   '(paredit-open-parenthesis)
-  "in-package #:" str
+  "in-package " str
   '(paredit-close-parenthesis) \n
   \n _)
 
 (define-skeleton redshank-defpackage-skeleton
   "Inserts a Common Lisp DEFPACKAGE skeleton."
-  (skeleton-read "Package: " (or (ignore-errors
-                                   (file-name-sans-extension
-                                    (file-name-nondirectory
-                                     (buffer-file-name))))
-                                 "TEMP"))
-  '(paredit-open-parenthesis) "defpackage #:" str
+  (redshank-canonical-package-designator
+   (skeleton-read "Package: " (or (ignore-errors
+                                    (file-name-sans-extension
+                                     (file-name-nondirectory
+                                      (buffer-file-name))))
+                                  "TEMP")))
+  '(paredit-open-parenthesis) "defpackage " str
   \n '(paredit-open-parenthesis)
-     ":nicknames" ("Nickname: " " #:" str)
+     ":nicknames" ((redshank-canonical-package-designator
+                    (skeleton-read "Nickname: ")) " " str)
    & '(paredit-close-parenthesis) & \n
    | '(progn
         (backward-up-list)
         (kill-sexp))
   '(paredit-open-parenthesis)
-   ":use #:cl" ((downcase (slime-read-package-name "USEd package: ")) " #:" str)
+  ":use " (redshank-canonical-package-designator "cl")
+          ((redshank-canonical-package-designator
+            (redshank-read-package-name "USEd package: ")) " " str)
   '(paredit-close-parenthesis)
   '(paredit-close-parenthesis) \n
   \n _)
@@ -901,7 +999,7 @@ This should be bound to a mouse click event type."
        '(backward-delete-char (length str))
        (redshank-canonical-slot-name str) 
        " :accessor " (redshank-accessor-name str)
-       " :initarg :" str
+       " :initarg " (redshank-initarg-name str)
        '(paredit-close-parenthesis) \n) & '(join-line)
   '(paredit-close-parenthesis)
   ;; \n "(:default-initargs " - ")" ;; add to your liking...
@@ -919,7 +1017,7 @@ This should be bound to a mouse click event type."
    '(backward-delete-char (length str))
    (redshank-canonical-slot-name str)    
    " :accessor " (redshank-accessor-name str)
-   " :initarg :" str
+   " :initarg " (redshank-initarg-name str)
    '(paredit-close-parenthesis) \n) & '(join-line)
    _)
 
@@ -940,12 +1038,22 @@ This should be bound to a mouse click event type."
       (redshank-align-defclass-slots))))
 
 ;;;; ASDF mode
+;;;###autoload
 (define-derived-mode asdf-mode lisp-mode "ASDF"
   "Major mode for ASDF files.  This mode is derived from `lisp-mode'
 and activates minor mode `redshank-mode' by default.
 
 \\{asdf-mode-map}"
   (redshank-mode +1))
+
+;;;###autoload
+(defun turn-on-asdf-mode ()
+  "Turn on ASDF mode.  Please see function `asdf-mode'.
+
+This function is designed to be added to hooks, for example:
+  \(add-hook 'lisp-mode-hook 'turn-on-asdf-mode)"
+  (interactive)
+  (asdf-mode +1))
 
 ;;;; Initialization
 (eval-after-load "slime"
