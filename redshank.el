@@ -1,7 +1,7 @@
 ;;; -*- Mode: Emacs-Lisp; outline-regexp: ";;;+ [^\n]\\|(" -*-
 ;;;;;; redshank.el --- Common Lisp Editing Extensions
 
-;; Copyright (C) 2006, 2007  Michael Weber
+;; Copyright (C) 2006, 2007, 2008  Michael Weber
 
 ;; Author: Michael Weber <michaelw@foldr.org>
 ;; Keywords: languages, lisp
@@ -16,18 +16,12 @@
 
 ;; Add this to your Emacs configuration:
 ;;
-;;   (add-to-list 'load-path "/path/to/redshank/")
-;;   (autoload 'redshank-mode "redshank"
-;;     "Minor mode for editing and refactoring (Common) Lisp code."
-;;     t)
-;;   (autoload 'turn-on-redshank-mode "redshank"
-;;     "Turn on Redshank mode.  Please see function `redshank-mode'."
-;;     t)
-;;   (add-hook 'lisp-mode-hook 'turn-on-redshank-mode)
-;;   (autoload 'asdf-mode "redshank"
-;;     "Minor mode for editing ASDF files." t)
-;;   (autoload 'turn-on-asdf-mode "redshank"
-;;     "Turn on ASDF mode.  Please see function `asdf-mode'." t)
+;;   (require 'redshank-loader
+;;            "/path/redshank/redshank-loader")
+;;            
+;;   (eval-after-load "redshank-loader"
+;;      `(redshank-setup '(lisp-mode-hook
+;;                         slime-repl-mode-hook) t))
 ;;
 ;; Also, this mode can be enabled with M-x redshank-mode.
 ;;
@@ -45,16 +39,8 @@
 ;;     '(progn ...redefine keys, etc....))
 ;;
 ;; Some of the skeleton functions (like `redshank-in-package-skeleton' or
-;; `redshank-mode-line-skeleton') are good candidates for autoinsert:
-;;
-;;   (add-to-list 'auto-insert-alist
-;;                '(lisp-mode . [redshank-mode-line-skeleton
-;;                               redshank-in-package-skeleton]))
-;;   (add-to-list 'auto-insert-alist
-;;                '(asdf-mode . [redshank-mode-line-skeleton
-;;                               redshank-asdf-defsystem-skeleton]))
-;;   (add-to-list 'auto-mode-alist '("\\.asdf?\\'" . asdf-mode))
-;;
+;; `redshank-mode-line-skeleton') are good candidates for autoinsert.
+;; See `redshank-setup' (in file redshank-loader.el) for examples.
 ;;
 ;; This code was tested with Paredit 21, and should run at least in
 ;; GNU Emacs 22 and later.
@@ -458,9 +444,10 @@ but does otherwise nothing."
   "Read a package name from the minibuffer, prompting with PROMPT."
   (let ((completion-ignore-case t))
     (redshank-canonical-package-name
-     (completing-read prompt (when (featurep 'slime)
-                               (slime-bogus-completion-alist 
-                                (slime-eval 
+     (completing-read prompt (when (and (featurep 'slime)
+                                        (redshank-connected-p))
+                               (slime-bogus-completion-alist
+                                (slime-eval
                                  `(swank:list-all-package-names t))))
                       nil nil initial-value nil initial-value))))
 
@@ -995,9 +982,9 @@ This should be bound to a mouse click event type."
       ((skeleton-read "Slot: ")
        '(paredit-open-parenthesis)
        str
-       ;; Ugly, but skeleton-read _must_ have the first str literal 
+       ;; Ugly, but skeleton-read _must_ have the first str literal
        '(backward-delete-char (length str))
-       (redshank-canonical-slot-name str) 
+       (redshank-canonical-slot-name str)
        " :accessor " (redshank-accessor-name str)
        " :initarg " (redshank-initarg-name str)
        '(paredit-close-parenthesis) \n) & '(join-line)
@@ -1013,9 +1000,9 @@ This should be bound to a mouse click event type."
    '(indent-according-to-mode)
    '(paredit-open-parenthesis)
    str
-   ;; Ugly, but skeleton-read _must_ have the first str literal 
+   ;; Ugly, but skeleton-read _must_ have the first str literal
    '(backward-delete-char (length str))
-   (redshank-canonical-slot-name str)    
+   (redshank-canonical-slot-name str)
    " :accessor " (redshank-accessor-name str)
    " :initarg " (redshank-initarg-name str)
    '(paredit-close-parenthesis) \n) & '(join-line)
