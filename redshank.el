@@ -804,13 +804,13 @@ If point is not in a slot form, fall back to `slime-complete-form'.
 \\<redshank-mode-map>\\[redshank-complete-form]
 
 \(defclass foo ()
-  (...
-   (slot-n |)
+  \(...
+   \(slot-n |)
    ...))
   ->
 \(defclass foo ()
-  (...
-   (slot-n :accessor get-slot-n :initarg :slot-n)|
+  \(...
+   \(slot-n :accessor get-slot-n :initarg :slot-n)|
    ...))"
   (interactive "*")
   (if (not (redshank--defclass-slot-form-at-point-p))
@@ -873,11 +873,11 @@ This should be bound to a mouse click event type."
              (unless (or (bolp)
                          (save-excursion
                            (backward-char)
-                           (looking-at "\\s-\\|\\s(")))
+                           (looking-at "\\s-\\|\\s\(")))
                (insert " "))
              (let ((contents.start (point)))
                (insert contents)
-               (unless (or (eolp) (looking-at "\\s-\\|\\s)"))
+               (unless (or (eolp) (looking-at "\\s-\\|\\s\)"))
                  (insert " "))
                (save-excursion
                  (goto-char contents.start)
@@ -1031,7 +1031,7 @@ This should be bound to a mouse click event type."
 and activates minor mode `redshank-mode' by default.
 
 \\{asdf-mode-map}"
-  (redshank-mode +1))
+  (add-hook 'asdf-mode-hook 'turn-on-redshank-mode))
 
 ;;;###autoload
 (defun turn-on-asdf-mode ()
@@ -1040,7 +1040,7 @@ and activates minor mode `redshank-mode' by default.
 This function is designed to be added to hooks, for example:
   \(add-hook 'lisp-mode-hook 'turn-on-asdf-mode)"
   (interactive)
-  (asdf-mode +1))
+  (asdf-mode))
 
 ;;;; Initialization
 (eval-after-load "slime"
