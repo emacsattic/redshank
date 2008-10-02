@@ -167,6 +167,20 @@ _darcs, .git)."
   :type 'string
   :group 'redshank)
 
+(defvar redshank-form-generator-alist
+  '((lisp-mode
+     ("defclass"   . redshank-defclass-skeleton)
+     ("defpackage" . redshank-defpackage-skeleton)
+     ("in-package" . redshank-in-package-skeleton)
+     ("defsystem"  . redshank-asdf-defsystem-skeleton)
+     (t            . redshank-lisp-generate-form))
+    (emacs-lisp-mode
+     (t . redshank-elisp-generate-form)))
+  "Alist of shape \((MODE . MODE-ALIST)...).  MODE-ALIST is an
+alist of shape \((KEY . GENERATOR)...), where key is a either
+a string, a function, or the symbol T, and GENERATOR a nullary
+function.")
+
 (eval-and-compile
   (defvar redshank-path
     (let ((path (or (locate-library "redshank") load-file-name)))
@@ -228,6 +242,9 @@ Emacs Lisp package."))
     (define-key map (kbd "M-<mouse-1>") 'redshank-ignore-event)
     (define-key map (kbd "M-<drag-mouse-1>") 'redshank-ignore-event)
     (define-key map (kbd "M-<down-mouse-1>") 'redshank-copy-thing-at-point)
+    (define-key map (kbd "M-S-<mouse-1>") 'redshank-ignore-event)
+    (define-key map (kbd "M-S-<drag-mouse-1>") 'redshank-ignore-event)
+    (define-key map (kbd "M-S-<down-mouse-1>") 'redshank-generate-thing-at-point)
     (easy-menu-define menu-bar-redshank map "Redshank" redshank-menu)
     map)
   "Keymap for the Redshank minor mode.")
@@ -463,6 +480,19 @@ but does otherwise nothing."
            (when (or (re-search-backward regexp nil t)
                      (re-search-forward  regexp nil t))
              (match-string-no-properties 2)))))))
+
+(defun redshank--assoc-match (key alist)
+  (loop for entry in alist do
+        (cond ((stringp (car entry))
+               (when (eq t (compare-strings (car entry) 0 nil
+                                            key 0 nil
+                                            case-fold-search))
+                 (return entry)))
+              ((functionp (car entry))
+               (when (funcall (car entry) key)
+                 (return entry)))
+              ((eq t (car entry))
+               (return entry)))))
 
 ;;; ASDF
 (defun redshank-walk-filesystem (spec enter-fn leave-fn)
@@ -884,6 +914,55 @@ This should be bound to a mouse click event type."
                  (indent-sexp))))
             (t
              (message "Don't know what to copy?"))))))
+
+;;;
+(defvar redshank-thing-at-point)
+
+(defun redshank-elisp-generate-form (&optional name)
+  (interactive "*")
+  (require 'eldoc)
+  (let* ((sym (intern-soft (or name redshank-thing-at-point)))
+         (args (eldoc-function-argstring sym)))
+    (save-match-data
+      (string-match "\\`[^ )]* ?" args)
+      (setq args (substring args (match-end 0)))
+      (insert (format "(%s " sym))
+      (let ((point (point)))
+        (insert args)
+        (goto-char point)))))
+
+(defun redshank-lisp-generate-form (&optional name)
+  (interactive "*")
+  (insert "(" (or name redshank-thing-at-point) " )")
+  (backward-char +1)
+  (when (fboundp 'slime-complete-form)
+    (slime-complete-form)))
+
+(defun redshank-generate-thing-at-point (event)
+  "Generates a (mode-specific) form corresponding to the symbol at point.
+The actual generator function is determined by
+`redshank-form-generator-alist'.
+
+Generators can access the actual value dispatched on via
+REDSHANK-THING-AT-POINT."
+  (interactive "*e")
+  (let* ((echo-keystrokes 0)
+	 (start-posn (event-start event))
+	 (start-point (posn-point start-posn))
+	 (start-window (posn-window start-posn))
+         (redshank-thing-at-point
+          (with-current-buffer (window-buffer start-window)
+            (save-excursion
+              (goto-char start-point)
+              (thing-at-point 'symbol))))
+         (mode-table (assq major-mode redshank-form-generator-alist))
+         (generator (redshank--assoc-match redshank-thing-at-point
+                                           (cdr mode-table))))
+    (if generator
+        (if (interactive-p)
+            (call-interactively (cdr generator))
+          (funcall (cdr generator)))
+      (message "Don't know a generator for `%s'." redshank-thing-at-point))))
 
 ;;;; Skeletons
 (define-skeleton redshank-mode-line-skeleton
