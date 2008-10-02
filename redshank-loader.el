@@ -9,7 +9,10 @@
 ;; See file redshank.el
 
 ;;; Code
-(let ((redshank-path (file-name-directory load-file-name)))
+(let* ((redshank-file (or (locate-library "redshank")
+                          load-file-name))
+       (redshank-path (and redshank-file
+                           (file-name-directory redshank-file))))
   (when redshank-path
     (add-to-list 'load-path redshank-path)))
 
