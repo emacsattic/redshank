@@ -901,13 +901,16 @@ This should be bound to a mouse click event type."
              (when (redshank--region-active-p)
                (delete-region (region-beginning) (region-end)))
              (unless (or (bolp)
+                         (minibufferp)
                          (save-excursion
                            (backward-char)
                            (looking-at "\\s-\\|\\s\(")))
                (insert " "))
              (let ((contents.start (point)))
                (insert contents)
-               (unless (or (eolp) (looking-at "\\s-\\|\\s\)"))
+               (unless (or (eolp)
+                           (minibufferp)
+                           (looking-at "\\s-\\|\\s\)"))
                  (insert " "))
                (save-excursion
                  (goto-char contents.start)
