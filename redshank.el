@@ -901,7 +901,8 @@ This should be bound to a mouse click event type."
              (when (redshank--region-active-p)
                (delete-region (region-beginning) (region-end)))
              (unless (or (bolp)
-                         (minibufferp)
+                         (and (minibufferp)
+                              (= (point) (minibuffer-prompt-end)))
                          (save-excursion
                            (backward-char)
                            (looking-at "\\s-\\|\\s\(")))
@@ -909,7 +910,8 @@ This should be bound to a mouse click event type."
              (let ((contents.start (point)))
                (insert contents)
                (unless (or (eolp)
-                           (minibufferp)
+                           (and (minibufferp)
+                                (= (point) (minibuffer-prompt-end)))
                            (looking-at "\\s-\\|\\s\)"))
                  (insert " "))
                (save-excursion
