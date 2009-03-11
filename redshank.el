@@ -670,7 +670,8 @@ involves macro-exanding code, and as such might have side effects."
   (let* ((form-string (buffer-substring-no-properties start end))
          (free-vars (slime-eval `(redshank:free-vars-for-emacs
                                   ,(concat "(locally " form-string ")")
-                                  ,(or package (slime-current-package)))
+                                  ,(or package (slime-pretty-package-name
+                                                (slime-current-package))))
                                 package)))
     (flet ((princ-to-string (o)
              (with-output-to-string
