@@ -374,7 +374,8 @@ LABELS or FLET.)"
   (and package-name (not (string= "" package-name))
        ;; very naive
        (lexical-let ((package-name (redshank--trim-whitespace package-name)))
-         (if (string-match "^#?:\\(.*\\)$" package-name)
+         (if (or (string-match "^#?:\\(.*\\)$" package-name)
+                 (string-match "^\"\\(.*\\)\"$" package-name))
              (match-string-no-properties 1 package-name)
            package-name))))
 
