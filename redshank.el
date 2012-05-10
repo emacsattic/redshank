@@ -818,13 +818,14 @@ is formatted to:
     (definition :accessor get-definition :initform nil))
    (:default-initargs :scope *current-scope*))"
   (interactive "*")
-  (save-excursion
-    (when (redshank--looking-at-or-inside "defclass")
+  (when (redshank--looking-at-or-inside "defclass")
+    (save-excursion
       (down-list)
       (forward-sexp +3)                 ; move to slots definitions
       (let ((slots.end (save-excursion (forward-sexp) (point))))
         (redshank-align-forms-as-columns (progn (down-list) (point))
-                                     slots.end)))))
+                                         slots.end)))
+    (indent-sexp)))
 
 (defun redshank-complete-form ()
   "If a Common Lisp DEFCLASS slot form is at point, attempt to complete it.
