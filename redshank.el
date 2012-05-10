@@ -1,7 +1,7 @@
 ;;; -*- Mode: Emacs-Lisp; outline-regexp: ";;;+ [^\n]\\|(" -*-
 ;;;;;; redshank.el --- Common Lisp Editing Extensions
 
-;; Copyright (C) 2006, 2007, 2008  Michael Weber
+;; Copyright (C) 2006--2012  Michael Weber
 
 ;; Author: Michael Weber <michaelw@foldr.org>
 ;; Keywords: languages, lisp
