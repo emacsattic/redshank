@@ -52,7 +52,7 @@
 
 ;;; Known Issues
 
-;; `redshank-align-defclass-slots':
+;; `redshank-align-slot-specs-in-form':
 ;; * Does not work if slot forms contain newlines
 ;; * Does not work well with #+ and #- reader conditionals
 ;; * Long slot options cause large columns (:documentation ...)
@@ -96,9 +96,16 @@ are not available."
   :type  'boolean
   :group 'redshank)
 
-(defcustom redshank-reformat-defclass-forms t
-  "*Reformat DEFCLASS forms when modifying them with Redshank commands."
+(defcustom redshank-reformat-form-containing-slots t
+  "*Reformat DEFCLASS-like forms when modifying them with Redshank commands."
   :type  'boolean
+  :group 'redshank)
+
+(defcustom redshank-align-slot-forms-list
+  '("defclass" "define-condition")
+  "*Regular expression matching the beginning of forms which contain
+slot definitions similar to DEFCLASS."
+  :type '(repeat string)
   :group 'redshank)
 
 (defcustom redshank-canonical-slot-name-function 'identity
@@ -139,6 +146,7 @@ package designator."
            (function-item redshank-package-designator/string)
            (function :tag "Other"))
   :group 'redshank)
+
 (defcustom redshank-licence-names
   '("BSD-style" "GPL" "LGPL" "LLGPL" "MIT" "MIT-style")
   "List of (short) licence names."
@@ -203,12 +211,15 @@ Emacs Lisp package."))
       [ "Splice Progn"              redshank-maybe-splice-progn t ]
       [ "Wrap into Eval-When"       redshank-eval-whenify-form t ]
       "--"
-      [ "Align Defclass Slots"      redshank-align-defclass-slots t ]
+      [ "Align Slot Specs in Form"  redshank-align-slot-specs-in-form t ]
       [ "Align Forms as Columns"    redshank-align-forms-as-columns t ]
       "--"
       [ "Complete Form"             redshank-complete-form ,SLIMEP ]
+      [ "Insert Form with Slots"    redshank-form-with-slots-skeleton t ]
       [ "Insert Defclass Form"      redshank-defclass-skeleton t ]
-      [ "Insert Defclass Slot Form" redshank-defclass-slot-skeleton t ]
+      [ "Insert Define-Condition Form"
+                                    redshank-define-condition-skeleton t ]
+      [ "Insert Slot Spec Form"     redshank-slot-spec-skeleton t ]
       [ "Insert Defsystem Form"     redshank-asdf-defsystem-skeleton t ]
       [ "Insert Defpackage Form"    redshank-defpackage-skeleton ,CONNECTEDP ]
       [ "Insert In-Package Form"    redshank-in-package-skeleton ,CONNECTEDP ]
@@ -217,7 +228,7 @@ Emacs Lisp package."))
 
 (defconst redshank-keys
   '(("A" . redshank-align-forms-as-columns)
-    ("a" . redshank-align-defclass-slots)
+    ("a" . redshank-align-slot-specs-in-form)
     ("c" . redshank-condify-form)
     ("e" . redshank-eval-whenify-form)
     ("f" . redshank-complete-form)
@@ -226,11 +237,11 @@ Emacs Lisp package."))
     ("n" . redshank-rewrite-negated-predicate)
     ("p" . redshank-maybe-splice-progn)
     ("x" . redshank-extract-to-defun)
-    ("C" . redshank-defclass-skeleton)
+    ("C" . redshank-form-with-slots-skeleton)
     ("P" . redshank-defpackage-skeleton)
     ("I" . redshank-in-package-skeleton)
     ("M" . redshank-mode-line-skeleton)
-    ("S" . redshank-defclass-slot-skeleton))
+    ("S" . redshank-slot-spec-skeleton))
   "Standard key bindings for the Redshank minor mode.")
 
 (defvar redshank-mode-map
@@ -325,13 +336,16 @@ ensure certain style in naming your slots, for instance
 
 ;;;
 (defun redshank--looking-at-or-inside (spec)
-  (let ((form-regex (concat "(" spec "\\S_"))
+  (let ((form-regex (concat "(\\(" spec "\\)\\S_"))
         (here.point (point)))
     (unless (looking-at "(")
       (ignore-errors (backward-up-list)))
     (or (looking-at form-regex)
         (prog1 nil
           (goto-char here.point)))))
+
+(defun redshank--align-slot-form-regexp ()
+  (mapconcat 'identity redshank-align-slot-forms-list "\\|"))
 
 (defun redshank-maybe-splice-progn ()
   "Splice PROGN form at point into its surrounding form.
@@ -431,11 +445,11 @@ COLUMN-WIDTHS is expected to be a list."
                                  (1+ (- width used))))))
         finally (up-list)))
 
-(defun redshank--defclass-slot-form-at-point-p ()
+(defun redshank--slot-form-at-point-p ()
   (ignore-errors
     (save-excursion
       (backward-up-list +3)
-      (looking-at "(defclass\\S_"))))
+      (redshank--looking-at-or-inside (redshank--align-slot-form-regexp)))))
 
 (defun redshank--region-active-p ()
   "Returns true if `transient-mark-mode' is used and region is active."
@@ -799,8 +813,8 @@ is formatted as:
             until (or (looking-at ")") (eobp))
             do (redshank-align-sexp-columns max-column-widths)))))
 
-(defun redshank-align-defclass-slots ()
-  "Align slots of the Common Lisp DEFCLASS form at point.
+(defun redshank-align-slot-specs-in-form ()
+  "Align slots of a Common Lisp DEFCLASS-like form at point.
 Example (| denotes cursor position):
 |(defclass identifier ()
    ((name :reader get-name :initarg :name)
@@ -816,9 +830,12 @@ is formatted to:
     (location   :reader   get-location   :initarg  :location)
     (scope      :accessor get-scope      :initarg  :scope)
     (definition :accessor get-definition :initform nil))
-   (:default-initargs :scope *current-scope*))"
+   (:default-initargs :scope *current-scope*))
+
+This also works for DEFINE-CONDITION, etc.  See also:
+`redshank-align-slot-form-list'"
   (interactive "*")
-  (when (redshank--looking-at-or-inside "defclass")
+  (when (redshank--looking-at-or-inside (redshank--align-slot-form-regexp))
     (save-excursion
       (down-list)
       (forward-sexp +3)                 ; move to slots definitions
@@ -828,9 +845,9 @@ is formatted to:
     (indent-sexp)))
 
 (defun redshank-complete-form ()
-  "If a Common Lisp DEFCLASS slot form is at point, attempt to complete it.
-The surrounding DEFCLASS form is reformatted, if this is enabled by
-`redshank-reformat-defclass-forms'.
+  "If a Common Lisp DEFCLASS-like slot form is at point, attempt to complete it.
+The surrounding form is reformatted, if this is enabled by
+`redshank-reformat-form-containing-slots'.
 
 If point is not in a slot form, fall back to `slime-complete-form'.
 
@@ -846,7 +863,7 @@ If point is not in a slot form, fall back to `slime-complete-form'.
    \(slot-n :accessor get-slot-n :initarg :slot-n)|
    ...))"
   (interactive "*")
-  (if (not (redshank--defclass-slot-form-at-point-p))
+  (if (not (redshank--slot-form-at-point-p))
       (call-interactively 'slime-complete-form)
     (backward-up-list)
     (down-list)
@@ -862,10 +879,10 @@ If point is not in a slot form, fall back to `slime-complete-form'.
         (insert ":accessor " (redshank-accessor-name slot-name)
                 " :initarg " (redshank-initarg-name slot-name))
         (up-list)
-        (when redshank-reformat-defclass-forms
+        (when redshank-reformat-forms-containing-slots
           (save-excursion
-            (backward-up-list +2)      ; to beginning of defclass form
-            (redshank-align-defclass-slots)))))))
+            (backward-up-list +2) ; to beginning of defclass-like form
+            (redshank-align-slot-specs-in-form)))))))
 
 (defun redshank-copy-thing-at-point (event)
   "Insert at point the syntactical element clicked on with the mouse.
@@ -1057,30 +1074,43 @@ REDSHANK-THING-AT-POINT."
   \n '(paredit-close-parenthesis)
   \n _)
 
-(define-skeleton redshank-defclass-skeleton
-  "Inserts a Common Lisp DEFCLASS skeleton."
-  "Class: "
+(define-skeleton redshank-form-with-slots-skeleton
+  "Inserts a Common Lisp form skeleton containing slot specs."
+  (completing-read "Type: " redshank-align-slot-forms-list nil nil
+                   (first redshank-align-slot-forms-list))
+  '(paredit-open-parenthesis) str " "
+  '(setq v1 (skeleton-read "Name: ")) v1 " "
   '(paredit-open-parenthesis)
-  "defclass " str " "
-  '(paredit-open-parenthesis)
-   ((skeleton-read "Superclass: ") str " ") & -1
+  ((skeleton-read "Superclass: ") str " ") & -1
   '(paredit-close-parenthesis)
-  \n '(paredit-open-parenthesis)
-      ((skeleton-read "Slot: ")
-       '(paredit-open-parenthesis)
-       str
-       ;; Ugly, but skeleton-read _must_ have the first str literal
-       '(backward-delete-char (length str))
-       (redshank-canonical-slot-name str)
-       " :accessor " (redshank-accessor-name str)
-       " :initarg " (redshank-initarg-name str)
-       '(paredit-close-parenthesis) \n) & '(join-line)
+  \n '(indent-according-to-mode)
+  '(paredit-open-parenthesis)
+  ((skeleton-read "Slot: ")
+   '(indent-according-to-mode)
+   '(paredit-open-parenthesis)
+   str
+   ;; Ugly, but skeleton-read _must_ have the first str literal
+   '(backward-delete-char (length str))
+   (redshank-canonical-slot-name str)
+   " :accessor " (redshank-accessor-name str)
+   " :initarg " (redshank-initarg-name str)
+   '(paredit-close-parenthesis) \n) & '(join-line)
   '(paredit-close-parenthesis)
   ;; \n "(:default-initargs " - ")" ;; add to your liking...
   '(paredit-close-parenthesis) "\n" \n
   _)
 
-(define-skeleton redshank-defclass-slot-skeleton
+(defun redshank-defclass-skeleton ()  
+  "Inserts a Common Lisp DEFCLASS skeleton."
+  (interactive "*")
+  (redshank-form-with-slots-skeleton "defclass"))
+
+(defun redshank-define-condition-skeleton ()  
+  "Inserts a Common Lisp DEFINE-CONDITION skeleton."
+  (interactive "*")
+  (redshank-form-with-slots-skeleton "define-condition"))
+
+(define-skeleton redshank-slot-spec-skeleton
   "Inserts a Common Lisp DEFCLASS slot skeleton."
   "Slot: "
   ((skeleton-read "Slot: ")
@@ -1095,21 +1125,21 @@ REDSHANK-THING-AT-POINT."
    '(paredit-close-parenthesis) \n) & '(join-line)
    _)
 
-(defadvice redshank-defclass-skeleton
-  (after redshank-format-defclass activate)
-  "Align DEFCLASS slots."
-  (when redshank-reformat-defclass-forms
+(defadvice redshank-form-with-slots-skeleton
+  (after redshank-format-form-with-slots activate)
+  "Align DEFCLASS-like slots."
+  (when redshank-reformat-form-containing-slots
     (save-excursion
       (backward-sexp)
-      (redshank-align-defclass-slots))))
+      (redshank-align-slot-specs-in-form))))
 
-(defadvice redshank-defclass-slot-skeleton
+(defadvice redshank-slot-spec-skeleton
   (after redshank-reformat-defclass activate)
   "Align DEFCLASS slots."
-  (when redshank-reformat-defclass-forms
+  (when redshank-reformat-form-containing-slots
     (save-excursion
       (backward-up-list +2)
-      (redshank-align-defclass-slots))))
+      (redshank-align-slot-specs-in-form))))
 
 ;;;; ASDF mode
 ;;;###autoload
