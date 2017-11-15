@@ -1,18 +1,34 @@
-;;; -*- Mode: Emacs-Lisp; outline-regexp: ";;;+ [^\n]\\|(" -*-
-;;;;;; redshank.el --- Common Lisp Editing Extensions
+;;; redshank.el --- Common Lisp Editing Extensions
 
 ;; Copyright (C) 2006--2012  Michael Weber
+;; Version: 1
+;; Package-Requires: ((paredit "21"))
 
 ;; Author: Michael Weber <michaelw@foldr.org>
 ;; Keywords: languages, lisp
+
+;; This file is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation;
+
+;; This file is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with GNU Emacs; see the file COPYING.  If not, write to
+;; the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+;; Boston, MA 02110-1301, USA.
+
+;;; Commentary:
 
 ;; Redshank, n.  A common Old World limicoline bird (Totanus
 ;;   calidris), having the legs and feet pale red. The spotted
 ;;   redshank (T. fuscus) is larger, and has orange-red legs.
 ;;   Called also redleg and _CLEE_.
 
-;;;; Commentary
-;;; Setup
+;;; Setup:
 
 ;; Add this to your Emacs configuration:
 ;;
@@ -30,7 +46,6 @@
 ;; slime-connected-hook.  If this is undesirable, set variable
 ;; `redshank-install-lisp-support' to nil before loading.
 ;;
-;;
 ;; Customization of redshank can be accomplished with
 ;; M-x customize-group RET redshank RET, or with
 ;; `eval-after-load':
@@ -45,19 +60,19 @@
 ;; This code was tested with Paredit 21, and should run at least in
 ;; GNU Emacs 22 and later.
 
-;;; To Do
+;;; To Do:
 
 ;; * Unit tests; no really, there are just too many ways to mess up
 ;;   code and comments.
 
-;;; Known Issues
+;;; Known Issues:
 
 ;; `redshank-align-slot-specs-in-form':
 ;; * Does not work if slot forms contain newlines
 ;; * Does not work well with #+ and #- reader conditionals
 ;; * Long slot options cause large columns (:documentation ...)
 
-;;; Contact
+;;; Contact:
 
 ;; Send questions, bug reports, comments and feature suggestions to
 ;; Michael Weber <michaelw+redshank@foldr.org>.  New versions can be
@@ -1168,20 +1183,6 @@ This function is designed to be added to hooks, for example:
        (redshank-slime-install))))
 
 (add-hook 'pre-command-hook 'redshank-unhighlight-binder)
+
 (provide 'redshank)
-
-;;;; Licence
-
-;; This file is free software; you can redistribute it and/or modify
-;; it under the terms of the GNU General Public License as published by
-;; the Free Software Foundation;
-
-;; This file is distributed in the hope that it will be useful,
-;; but WITHOUT ANY WARRANTY; without even the implied warranty of
-;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-;; GNU General Public License for more details.
-
-;; You should have received a copy of the GNU General Public License
-;; along with GNU Emacs; see the file COPYING.  If not, write to
-;; the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
-;; Boston, MA 02110-1301, USA.
+;;; redshank.el ends here
