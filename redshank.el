@@ -662,6 +662,10 @@ The binding variable's name is requested in the mini-buffer."
     (save-excursion                     ; insert variable name
       (insert var))))
 
+(defun redshank-backward-down-list (&optional arg)
+  (interactive "^p")
+  (down-list (- (or arg 1))))
+
 (defun redshank-letify-form-up (var &optional arg)
   "Extract the form at point into a (possibly enclosing) LET binding.
 The binding variable's name is requested in the mini-buffer.
@@ -681,7 +685,7 @@ With prefix argument, or if no suitable binding can be found,
                (goto-char let.start)
                (down-list)              ; move point from |(let ...
                (forward-sexp +2)        ; to behind last binder form
-               (backward-down-list)
+               (redshank-backward-down-list)
                (paredit-newline)        ; insert new binder
                (let ((binder.start (point)))
                  (insert "(" var " " form ")")
